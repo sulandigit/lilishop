@@ -40,19 +40,43 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 店铺认证过滤器
+ * 用于验证店铺端用户的JWT令牌，并进行权限校验
+ * 
  * @author Chopper
  */
 @Slf4j
 public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
 
+    /**
+     * 缓存服务
+     */
     private final Cache cache;
 
+    /**
+     * 店铺Token生成器
+     */
     private final StoreTokenGenerate storeTokenGenerate;
 
+    /**
+     * 店铺菜单角色服务
+     */
     private final StoreMenuRoleService storeMenuRoleService;
 
+    /**
+     * 店员服务
+     */
     private final ClerkService clerkService;
 
+    /**
+     * 构造方法
+     *
+     * @param authenticationManager 认证管理器
+     * @param storeTokenGenerate    店铺Token生成器
+     * @param storeMenuRoleService  店铺菜单角色服务
+     * @param clerkService          店员服务
+     * @param cache                 缓存服务
+     */
     public StoreAuthenticationFilter(AuthenticationManager authenticationManager,
                                      StoreTokenGenerate storeTokenGenerate,
                                      StoreMenuRoleService storeMenuRoleService,
@@ -65,6 +89,16 @@ public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
         this.cache = cache;
     }
 
+    /**
+     * 过滤器核心方法
+     * 从请求头中获取JWT令牌，验证并将用户信息存入Spring Security上下文
+     *
+     * @param request  HTTP请求
+     * @param response HTTP响应
+     * @param chain    过滤器链
+     * @throws IOException      IO异常
+     * @throws ServletException Servlet异常
+     */
     @SneakyThrows
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException,
@@ -88,11 +122,12 @@ public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
 
 
     /**
-     * 获取token信息
+     * 获取token信息并验证
+     * 解析JWT令牌，从中获取用户信息，并验证令牌在缓存中是否有效
      *
-     * @param jwt
-     * @param response
-     * @return
+     * @param jwt      JWT令牌字符串
+     * @param response HTTP响应
+     * @return 用户认证信息，验证失败返回null
      */
     private UsernamePasswordAuthenticationToken getAuthentication(String jwt, HttpServletResponse response) {
 
@@ -129,10 +164,13 @@ public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
 
     /**
      * 自定义权限过滤
+     * 根据用户角色和权限配置，验证用户是否有权限访问请求的URL
+     * 超级管理员拥有所有权限，普通用户根据其角色权限进行校验
      *
      * @param request        请求
      * @param response       响应
      * @param authentication 用户信息
+     * @throws NoPermissionException 权限不足异常
      */
     private void customAuthentication(HttpServletRequest request, HttpServletResponse response, UsernamePasswordAuthenticationToken authentication) throws NoPermissionException {
         AuthUser authUser = (AuthUser) authentication.getDetails();
@@ -178,6 +216,7 @@ public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
 
     /**
      * 校验权限
+     * 使用Spring的模式匹配工具，验证请求URL是否匹配权限列表中的任一权限模式
      *
      * @param permissions 权限集合
      * @param url         请求地址
@@ -191,4 +230,3 @@ public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
     }
 
 }
-
