@@ -31,6 +31,11 @@ spring:
         url: http://127.0.0.1:8000
   cache:
     type: redis
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
   # Redis
   redis:
     host: 127.0.0.1
