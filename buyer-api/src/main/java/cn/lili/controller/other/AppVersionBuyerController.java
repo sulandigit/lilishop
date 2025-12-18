@@ -28,10 +28,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/buyer/other/appVersion")
 public class AppVersionBuyerController {
 
+    /**
+     * APP版本服务
+     */
     @Autowired
     private AppVersionService appVersionService;
 
 
+    /**
+     * 获取指定类型的APP最新版本信息
+     *
+     * @param appType APP类型
+     * @return 最新版本信息
+     */
     @ApiOperation(value = "获取版本号")
     @ApiImplicitParam(name = "appType", value = "app类型", required = true, paramType = "path")
     @GetMapping("/{appType}")
@@ -39,6 +48,13 @@ public class AppVersionBuyerController {
         return ResultUtil.data(appVersionService.getAppVersion(appType));
     }
 
+    /**
+     * 分页查询指定类型的APP版本历史列表
+     *
+     * @param appType APP类型
+     * @param pageVO 分页参数
+     * @return 版本历史分页数据
+     */
     @ApiOperation(value = "获取版本号列表")
     @ApiImplicitParam(name = "appType", value = "app类型", required = true, paramType = "path")
     @GetMapping("/appVersion/{appType}")
