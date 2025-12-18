@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 
 /**
- * 买家端,发票接口
+ * 买家端发票管理控制器
+ * 用于处理买家发票相关的操作，包括发票的查询、保存等
  *
  * @author paulG
  * @since 2021/1/12
@@ -30,18 +31,38 @@ public class ReceiptBuyerController {
     @Autowired
     private ReceiptService receiptService;
 
+    /**
+     * 根据发票ID获取发票详情
+     * 
+     * @param id 发票ID
+     * @return 发票详情信息
+     */
     @ApiOperation(value = "获取发票详情")
     @GetMapping("/{id}")
     public ResultMessage<Receipt> getDetail(@PathVariable String id) {
         return ResultUtil.data(this.receiptService.getDetail(id));
     }
 
+    /**
+     * 分页获取发票信息列表
+     * 
+     * @param searchParams 发票搜索参数
+     * @param pageVO 分页参数
+     * @return 发票信息分页数据
+     */
     @ApiOperation(value = "获取发票分页信息")
     @GetMapping
     public ResultMessage<IPage<OrderReceiptDTO>> getPage(ReceiptSearchParams searchParams, PageVO pageVO) {
         return ResultUtil.data(this.receiptService.getReceiptData(searchParams, pageVO));
     }
 
+    /**
+     * 保存发票信息
+     * 使用@PreventDuplicateSubmissions注解防止重复提交
+     * 
+     * @param receipt 发票信息
+     * @return 保存后的发票信息
+     */
     @PreventDuplicateSubmissions
     @ApiOperation(value = "保存发票信息")
     @PostMapping
