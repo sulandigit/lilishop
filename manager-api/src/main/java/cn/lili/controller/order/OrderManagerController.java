@@ -13,8 +13,11 @@ import cn.lili.modules.order.order.entity.dto.OrderSearchParams;
 import cn.lili.modules.order.order.entity.vo.OrderDetailVO;
 import cn.lili.modules.order.order.entity.vo.OrderNumVO;
 import cn.lili.modules.order.order.entity.vo.OrderSimpleVO;
+import cn.lili.modules.order.order.entity.dos.ExportTask;
+import cn.lili.modules.order.order.service.ExportTaskService;
 import cn.lili.modules.order.order.service.OrderPriceService;
 import cn.lili.modules.order.order.service.OrderService;
+import cn.lili.common.security.context.UserContext;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +51,11 @@ public class OrderManagerController {
      */
     @Autowired
     private OrderPriceService orderPriceService;
+    /**
+     * 导出任务
+     */
+    @Autowired
+    private ExportTaskService exportTaskService;
 
 
     @ApiOperation(value = "查询订单列表分页")
@@ -67,6 +75,29 @@ public class OrderManagerController {
     public void queryExportOrder(OrderSearchParams orderSearchParams) {
         HttpServletResponse response = ThreadContextHolder.getHttpResponse();
         orderService.queryExportOrder(response,orderSearchParams);
+    }
+
+    @ApiOperation(value = "创建异步订单导出任务")
+    @PostMapping("/asyncExportOrder")
+    public ResultMessage<ExportTask> asyncExportOrder(OrderSearchParams orderSearchParams) {
+        String operatorId = UserContext.getCurrentUser().getId();
+        ExportTask task = exportTaskService.createOrderExportTask(orderSearchParams, operatorId, "MANAGER", null);
+        return ResultUtil.data(task);
+    }
+
+    @ApiOperation(value = "查询导出任务状态")
+    @GetMapping("/exportTask/{taskId}")
+    public ResultMessage<ExportTask> getExportTask(@PathVariable String taskId) {
+        return ResultUtil.data(exportTaskService.getTaskById(taskId));
+    }
+
+    @ApiOperation(value = "查询导出任务列表")
+    @GetMapping("/exportTaskList")
+    public ResultMessage<IPage<ExportTask>> getExportTaskList(
+            @RequestParam(defaultValue = "1") Integer pageNumber,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        String operatorId = UserContext.getCurrentUser().getId();
+        return ResultUtil.data(exportTaskService.getTaskPage(operatorId, "MANAGER", null, pageNumber, pageSize));
     }
 
 
