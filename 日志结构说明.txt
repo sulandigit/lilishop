@@ -1,0 +1,188 @@
+================================================================================
+                          LiLiShop 日志结构说明文档
+================================================================================
+
+一、日志配置概述
+================================================================================
+项目使用 Logback 作为日志框架，通过 logback-spring.xml 配置文件进行管理。
+每个模块（buyer-api、seller-api、admin等）都有独立的日志配置。
+
+
+二、日志输出目标（Appender）
+================================================================================
+
+1. CONSOLE Appender（控制台输出）
+   - 输出目标：系统控制台
+   - 用途：开发时实时查看日志
+   - 继承自 Spring Boot 默认配置
+
+2. FILE Appender（文件输出）
+   - 输出目标：本地文件系统
+   - 文件路径：${LOG_FILE_PATH}/${APP_NAME}-%d{yyyy-MM-dd}.log
+   - 日期格式：yyyy-MM-dd（按天分割）
+   - 保留期限：30天内的日志文件
+   - 用途：持久化保存日志，便于事后分析
+
+3. RocketmqClientAppender（RocketMQ客户端专用）
+   - 输出目标：独立文件
+   - 文件路径：${LOG_FILE_PATH}/rocketmq/rocketmq-%d{yyyy-MM-dd}.log
+   - 日期格式：按天分割
+   - 保留期限：30天，最大30MB
+   - 用途：隔离RocketMQ日志，便于排查消息队列问题
+
+4. LOGSTASH Appender（ELK集中日志收集）
+   - 输出目标：远程Logstash服务器
+   - 地址：${LOGSTASH_SERVER}（通过配置指定）
+   - 协议：TCP Socket
+   - 编码：UTF-8
+   - 用途：实时上报日志到ELK，进行集中分析和监控
+
+
+三、日志格式说明
+================================================================================
+
+1. FILE 格式（标准日志格式）
+   - 使用 ${FILE_LOG_PATTERN}：包含时间、线程、级别、类名等信息
+   - 样例：2024-12-18 10:30:45.123 [http-nio-8080-exec-1] INFO cn.lili.service.UserService - User login success
+
+2. RocketmqClientAppender 格式
+   模式：%d{yy-MM-dd.HH:mm:ss.SSS} [%-16t] %-5p %-22c{0} %X{ServiceId} - %m%n
+   
+   各部分说明：
+   - %d{yy-MM-dd.HH:mm:ss.SSS}：时间戳（简化格式）
+   - [%-16t]：线程名称（16字符宽度）
+   - %-5p：日志级别（5字符宽度）
+   - %-22c{0}：类名（最后一个包名）
+   - %X{ServiceId}：MDC中的服务ID
+   - %m%n：日志消息和换行符
+
+3. LOGSTASH 格式
+   - 自动转为JSON格式
+   - 包含自定义字段："appName":"${APP_NAME}"
+   - 时间戳使用UTC时区
+   - 便于ELK中的结构化查询
+
+
+四、日志级别
+================================================================================
+
+根据 root logger 配置，默认日志级别为 INFO：
+   - TRACE：最详细的调试信息（通常不启用）
+   - DEBUG：调试信息
+   - INFO：重要的业务信息（默认级别）
+   - WARN：警告信息
+   - ERROR：错误信息
+   - FATAL：致命错误
+
+
+五、日志输出路径配置
+================================================================================
+
+配置来源：application.yml 或 application.properties
+
+1. 日志文件路径
+   变量名：logging.file.path
+   说明：日志文件保存的根目录
+
+2. 应用名称
+   变量名：spring.application.name
+   说明：用于区分不同的微服务模块
+
+3. Logstash 服务器
+   变量名：lili.data.logstash.server
+   说明：ELK中Logstash的地址，格式通常为 host:port
+
+
+六、日志使用规范
+================================================================================
+
+1. 在 Java 代码中的使用方式：
+
+   方式一：使用 SLF4J 注解（推荐）
+   @Slf4j
+   public class UserService {
+       public void login(String username) {
+           log.info("User {} login success", username);
+       }
+   }
+
+   方式二：通过 LoggerFactory（传统方式）
+   private final Logger logger = LoggerFactory.getLogger(XxlJobConfig.class);
+   logger.info("Job initialized");
+
+2. 日志记录建议：
+   - 重要业务操作使用 INFO 级别
+   - 调试信息使用 DEBUG 级别
+   - 异常情况使用 ERROR 或 WARN 级别
+   - 避免在循环中频繁打印日志（影响性能）
+   - 使用参数化消息（如 log.info("User {}", username)）而非字符串拼接
+
+
+七、日志存储和清理
+================================================================================
+
+1. 文件存储策略：
+   - 按日期分割（TimeBasedRollingPolicy）
+   - 自动归档旧日志到带日期的文件中
+
+2. 保留策略：
+   - 普通日志：保留最近30天
+   - RocketMQ日志：保留最近30天，总大小不超过30MB
+   - 超期日志自动删除
+
+3. 存储位置示例：
+   /var/logs/buyer-api/buyer-api-2024-12-18.log
+   /var/logs/buyer-api/rocketmq/rocketmq-2024-12-18.log
+
+
+八、日志监控和查询
+================================================================================
+
+1. 本地查看：
+   tail -f /var/logs/buyer-api/buyer-api-2024-12-18.log
+
+2. ELK 查询：
+   - 通过 Kibana 界面搜索日志
+   - 使用应用名称 appName 筛选
+   - 支持时间范围、关键词等多维度查询
+
+3. 常见排查场景：
+   - 业务异常：查看 ERROR 级别日志
+   - 性能问题：查看响应时间相关日志
+   - 消息队列问题：查看 rocketmq.log
+   - 跨模块调用：在 ELK 中关联多个模块的日志
+
+
+九、主要配置属性总结
+================================================================================
+
+| 配置项               | 用途                  | 默认值/来源          |
+|-------------------|----------------------|------------------|
+| APP_NAME          | 应用标识              | spring.application.name |
+| LOG_FILE_PATH     | 日志保存路径           | logging.file.path    |
+| LOGSTASH_SERVER   | 日志收集服务地址        | lili.data.logstash.server |
+| maxHistory        | 日志保留天数           | 30                 |
+| totalSizeCap      | 日志总大小限制（RocketMQ）| 30MB               |
+| root level        | 根日志级别            | INFO               |
+
+
+十、故障排查
+================================================================================
+
+1. 日志文件不生成？
+   - 检查 logging.file.path 配置是否正确
+   - 检查目录权限是否允许写入
+   - 检查磁盘空间是否充足
+
+2. ELK 中看不到日志？
+   - 检查 lili.data.logstash.server 配置
+   - 检查网络连接到 Logstash 服务器
+   - 查看应用日志中是否有连接错误
+
+3. 日志输出到控制台但未保存文件？
+   - 检查 root logger 中是否有 FILE appender-ref
+   - 检查 FILE appender 的配置是否完整
+
+================================================================================
+                           文档更新时间：2024-12-18
+================================================================================
