@@ -2,6 +2,8 @@ package cn.lili.rocketmq.tags;
 
 /**
  * 会员操作枚举
+ * 用于定义RocketMQ消息队列中会员相关操作的标签类型
+ * 这些标签用于标识不同的会员业务事件,便于消息的分类和处理
  *
  * @author paulG
  * @since 2020/12/9
@@ -40,12 +42,25 @@ public enum MemberTagsEnum {
      */
     MEMBER_CONNECT_LOGIN("会员使用联合登录");
 
+    /**
+     * 枚举描述信息
+     */
     private final String description;
 
+    /**
+     * 构造函数
+     *
+     * @param description 枚举描述信息
+     */
     MemberTagsEnum(String description) {
         this.description = description;
     }
 
+    /**
+     * 获取枚举的描述信息
+     *
+     * @return 描述信息
+     */
     public String description() {
         return description;
     }
