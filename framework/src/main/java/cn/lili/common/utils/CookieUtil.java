@@ -5,72 +5,62 @@ import lombok.extern.slf4j.Slf4j;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Objects;
 
-/**
- * CookieUtil
- *
- * @author Chopper
- * @version v1.0
- * 2020-12-14 09:32
- */
 @Slf4j
 public class CookieUtil {
 
+    private CookieUtil() {
+    }
 
-    /**
-     * 新增cookie
-     *
-     * @param key      key值
-     * @param value    对应值
-     * @param maxAge   cookie 有效时间
-     * @param response 响应
-     */
     public static void addCookie(String key, String value, Integer maxAge, HttpServletResponse response) {
+        if (key == null || value == null || maxAge == null || response == null) {
+            log.warn("addCookie参数不能为null");
+            return;
+        }
         try {
-            Cookie c = new Cookie(key, value);
-            c.setMaxAge(maxAge);
-            c.setPath("/");
-            response.addCookie(c);
+            Cookie cookie = new Cookie(key, value);
+            cookie.setMaxAge(maxAge);
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            cookie.setSecure(true);
+            response.addCookie(cookie);
         } catch (Exception e) {
-            log.error("新增cookie错误",e);
+            log.error("新增cookie错误", e);
         }
     }
 
-    /**
-     * 删除cookie
-     *
-     * @param key      key值
-     * @param response 响应
-     */
     public static void delCookie(String key, HttpServletResponse response) {
+        if (key == null || response == null) {
+            log.warn("delCookie参数不能为null");
+            return;
+        }
         try {
-            Cookie c = new Cookie(key, "");
-            c.setMaxAge(0);
-            response.addCookie(c);
+            Cookie cookie = new Cookie(key, "");
+            cookie.setMaxAge(0);
+            cookie.setPath("/");
+            response.addCookie(cookie);
         } catch (Exception e) {
-            log.error("删除cookie错误",e);
+            log.error("删除cookie错误", e);
         }
     }
 
-    /**
-     * 获取cookie
-     *
-     * @param key     key值
-     * @param request 请求
-     * @return cookie value
-     */
     public static String getCookie(String key, HttpServletRequest request) {
+        if (key == null || request == null) {
+            return null;
+        }
         try {
-            if (request.getCookies() == null) {
+            Cookie[] cookies = request.getCookies();
+            if (cookies == null) {
                 return null;
             }
-            for (int i = 0; i < request.getCookies().length; i++) {
-                if (request.getCookies()[i].getName().equals(key)) {
-                    return request.getCookies()[i].getValue();
+            for (Cookie cookie : cookies) {
+                if (Objects.equals(cookie.getName(), key)) {
+                    return cookie.getValue();
                 }
             }
         } catch (Exception e) {
-            log.error("获取cookie错误",e);
+            log.error("获取cookie错误", e);
         }
         return null;
     }
