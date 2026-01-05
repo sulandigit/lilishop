@@ -14,6 +14,7 @@ import cn.lili.modules.member.service.MemberService;
 import cn.lili.modules.sms.SmsUtil;
 import cn.lili.modules.verification.entity.enums.VerificationEnums;
 import cn.lili.modules.verification.service.VerificationService;
+import cn.lili.modules.security.aspect.annotation.SecurityLog;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -49,6 +50,7 @@ public class StorePassportController {
     private VerificationService verificationService;
 
     @ApiOperation(value = "登录接口")
+    @SecurityLog(operationType = "USER_LOGIN", securityLevel = "INFO", description = "用户登录操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "username", value = "用户名", required = true, paramType = "query"),
             @ApiImplicitParam(name = "password", value = "密码", required = true, paramType = "query")
@@ -64,8 +66,9 @@ public class StorePassportController {
     }
 
     @ApiOperation(value = "短信登录接口")
+    @SecurityLog(operationType = "SMS_LOGIN", securityLevel = "INFO", description = "短信登录操作")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "mobile", value = "手机号", required = true, paramType = "query"),
+            @ApiImplicitParam(name = "mobile", value = "手机号", required true, paramType = "query"),
             @ApiImplicitParam(name = "code", value = "验证码", required = true, paramType = "query")
     })
     @PostMapping("/smsLogin")
@@ -80,6 +83,7 @@ public class StorePassportController {
     }
 
     @ApiOperation(value = "注销接口")
+    @SecurityLog(operationType = "USER_LOGOUT", securityLevel = "INFO", description = "用户注销操作")
     @PostMapping("/logout")
     public ResultMessage<Object> logout() {
         this.memberService.logout(UserEnums.STORE);
@@ -87,6 +91,7 @@ public class StorePassportController {
     }
 
     @ApiOperation(value = "通过短信重置密码")
+    @SecurityLog(operationType = "RESET_PASSWORD_BY_SMS", securityLevel = "HIGH", description = "通过短信重置密码操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "mobile", value = "手机号", required = true, paramType = "query"),
             @ApiImplicitParam(name = "password", value = "是否保存登录", required = true, paramType = "query")
@@ -105,6 +110,7 @@ public class StorePassportController {
         }
     }
     @ApiOperation(value = "修改密码")
+    @SecurityLog(operationType = "RESET_PASSWORD", securityLevel = "HIGH", description = "重置密码操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "密码", required = true, paramType = "query")
     })
@@ -114,6 +120,7 @@ public class StorePassportController {
     }
 
     @ApiOperation(value = "修改密码")
+    @SecurityLog(operationType = "MODIFY_PASSWORD", securityLevel = "HIGH", description = "修改密码操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "旧密码", required = true, paramType = "query"),
             @ApiImplicitParam(name = "newPassword", value = "新密码", required = true, paramType = "query")
