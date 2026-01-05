@@ -5,8 +5,10 @@ import cn.lili.modules.goods.entity.dto.GoodsOperationDTO;
 import cn.lili.modules.goods.entity.dto.GoodsSearchParams;
 import cn.lili.modules.goods.entity.enums.GoodsAuthEnum;
 import cn.lili.modules.goods.entity.enums.GoodsStatusEnum;
+import cn.lili.modules.goods.entity.enums.ImagePrecisionEnum;
 import cn.lili.modules.goods.entity.vos.GoodsNumVO;
 import cn.lili.modules.goods.entity.vos.GoodsVO;
+import cn.lili.modules.goods.entity.vos.GoodsImageVO;
 import cn.lili.modules.store.entity.dos.Store;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -75,6 +77,33 @@ public interface GoodsService extends IService<Goods> {
      */
     GoodsVO getGoodsVO(String goodsId);
 
+    /**
+     * 查询商品VO - 支持图片精度参数
+     *
+     * @param goodsId   商品id
+     * @param precision 图片精度
+     * @return 商品VO
+     */
+    GoodsVO getGoodsVO(String goodsId, ImagePrecisionEnum precision);
+
+    /**
+     * 查询商品VO - 包含图片优化信息
+     *
+     * @param goodsId                   商品id
+     * @param includeImageOptimization  是否包含图片优化信息
+     * @return 商品VO
+     */
+    GoodsVO getGoodsVOWithImageOptimization(String goodsId, Boolean includeImageOptimization);
+
+    /**
+     * 获取商品优化后的图片列表
+     *
+     * @param goodsId           商品ID
+     * @param precision         图片精度
+     * @param includeLazyLoadInfo 是否包含懒加载信息
+     * @return 优化后的图片对象列表
+     */
+    List<GoodsImageVO> getGoodsImageList(String goodsId, ImagePrecisionEnum precision, Boolean includeLazyLoadInfo);
 
     /**
      * 商品查询

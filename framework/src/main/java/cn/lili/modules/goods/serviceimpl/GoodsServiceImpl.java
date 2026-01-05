@@ -20,6 +20,7 @@ import cn.lili.modules.goods.entity.dto.GoodsParamsDTO;
 import cn.lili.modules.goods.entity.dto.GoodsSearchParams;
 import cn.lili.modules.goods.entity.enums.GoodsAuthEnum;
 import cn.lili.modules.goods.entity.enums.GoodsStatusEnum;
+import cn.lili.modules.goods.entity.enums.ImagePrecisionEnum;
 import cn.lili.modules.goods.entity.vos.GoodsNumVO;
 import cn.lili.modules.goods.entity.vos.GoodsSkuVO;
 import cn.lili.modules.goods.entity.vos.GoodsVO;
@@ -121,6 +122,12 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
 
     @Autowired
     private Cache<GoodsVO> cache;
+
+    /**
+     * 图片处理服务
+     */
+    @Autowired
+    private ImageProcessService imageProcessService;
 
     @Override
     public List<Goods> getByBrandIds(List<String> brandIds) {
@@ -277,9 +284,131 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         return goodsVO;
     }
 
-    @Override
-    public IPage<Goods> queryByParams(GoodsSearchParams goodsSearchParams) {
-        return this.page(PageUtil.initPage(goodsSearchParams), goodsSearchParams.queryWrapper());
+    /**
+     * 增强版 getGoodsVO - 支持图片精度参数
+     *
+     * @param goodsId   商品ID
+     * @param precision 图片精度 (THUMBNAIL/SMALL/ORIGINAL)
+     * @return GoodsVO对象
+     */
+    public GoodsVO getGoodsVO(String goodsId, ImagePrecisionEnum precision) {
+        // 先获取基础的GoodsVO
+        GoodsVO goodsVO = this.getGoodsVO(goodsId);
+        if (goodsVO == null) {
+            return null;
+        }
+
+        // 根据精度获取图片列表
+        try {
+            Setting setting = settingService.get(SettingEnum.GOODS_SETTING.name());
+            GoodsSetting goodsSetting = JSONUtil.toBean(setting.getSettingValue(), GoodsSetting.class);
+
+            int listPageImageCount = goodsSetting.getListPageImageCount() != null ? goodsSetting.getListPageImageCount() : 6;
+            int defaultQuality = goodsSetting.getDefaultImageQuality() != null ? goodsSetting.getDefaultImageQuality() : 80;
+            boolean enableWebp = goodsSetting.getEnableWebpConversion() != null && goodsSetting.getEnableWebpConversion();
+
+            // 获取优化后的图片列表
+            List<GoodsGallery> galleries = goodsGalleryService.goodsGalleryList(goodsId);
+            List<GoodsImageVO> imageList = imageProcessService.buildImageObjectList(galleries, precision, listPageImageCount, defaultQuality, enableWebp);
+            goodsVO.setGoodsImageList(imageList);
+        } catch (Exception e) {
+            log.error("获取优化后的图片列表失败", e);
+            // 如果出错，保持原有的goodsGalleryList不变
+        }
+
+        return goodsVO;
+    }
+
+    /**
+     * 获取商品VO并返回优化后的图片列表（含懒加载信息）
+     *
+     * @param goodsId               商品ID
+     * @param includeImageOptimization 是否包含图片优化信息
+     * @return GoodsVO对象
+     */
+    public GoodsVO getGoodsVOWithImageOptimization(String goodsId, Boolean includeImageOptimization) {
+        if (!includeImageOptimization) {
+            return this.getGoodsVO(goodsId);
+        }
+
+        // 获取基础GoodsVO
+        GoodsVO goodsVO = this.getGoodsVO(goodsId);
+        if (goodsVO == null) {
+            return null;
+        }
+
+        try {
+            Setting setting = settingService.get(SettingEnum.GOODS_SETTING.name());
+            GoodsSetting goodsSetting = JSONUtil.toBean(setting.getSettingValue(), GoodsSetting.class);
+
+            // 获取配置
+            String precisionStr = goodsSetting.getListPageImagePrecision() != null ? goodsSetting.getListPageImagePrecision() : "THUMBNAIL";
+            ImagePrecisionEnum precision = ImagePrecisionEnum.valueOf(precisionStr);
+            int listPageImageCount = goodsSetting.getListPageImageCount() != null ? goodsSetting.getListPageImageCount() : 6;
+            int defaultQuality = goodsSetting.getDefaultImageQuality() != null ? goodsSetting.getDefaultImageQuality() : 80;
+            boolean enableWebp = goodsSetting.getEnableWebpConversion() != null && goodsSetting.getEnableWebpConversion();
+
+            // 获取优化后的图片列表
+            List<GoodsGallery> galleries = goodsGalleryService.goodsGalleryList(goodsId);
+            List<GoodsImageVO> imageList = imageProcessService.buildImageObjectList(galleries, precision, listPageImageCount, defaultQuality, enableWebp);
+            goodsVO.setGoodsImageList(imageList);
+
+            // 构建图片元数据
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("listPageImageCount", listPageImageCount);
+            metadata.put("lazyLoadThreshold", goodsSetting.getLazyLoadThreshold());
+            metadata.put("enableImageCompression", goodsSetting.getEnableImageCompression());
+            metadata.put("enableWebpConversion", enableWebp);
+            metadata.put("precision", precision.name());
+            goodsVO.setImageMetadata(metadata);
+        } catch (Exception e) {
+            log.error("获取图片优化信息失败: goodsId={}", goodsId, e);
+            // 如果出错，保持原有状态
+        }
+
+    /**
+     * 获取商品优化后的图片列表
+     *
+     * @param goodsId           商品ID
+     * @param precision         图片精度
+     * @param includeLazyLoadInfo 是否包含懒加载信息
+     * @return 优化后的图片对象列表
+     */
+    public List<GoodsImageVO> getGoodsImageList(String goodsId, ImagePrecisionEnum precision, Boolean includeLazyLoadInfo) {
+        List<GoodsImageVO> result = new ArrayList<>();
+        try {
+            // 查询商品相册列表
+            List<GoodsGallery> galleries = goodsGalleryService.goodsGalleryList(goodsId);
+            if (galleries.isEmpty()) {
+                return result;
+            }
+
+            // 获取商品设置
+            Setting setting = settingService.get(SettingEnum.GOODS_SETTING.name());
+            GoodsSetting goodsSetting = JSONUtil.toBean(setting.getSettingValue(), GoodsSetting.class);
+
+            // 获取默认配置
+            int listPageImageCount = goodsSetting.getListPageImageCount() != null ? goodsSetting.getListPageImageCount() : 6;
+            int defaultQuality = goodsSetting.getDefaultImageQuality() != null ? goodsSetting.getDefaultImageQuality() : 80;
+            boolean enableWebp = goodsSetting.getEnableWebpConversion() != null && goodsSetting.getEnableWebpConversion();
+
+            // 使用ImageProcessService构建图片对象列表
+            result = imageProcessService.buildImageObjectList(galleries, precision, listPageImageCount, defaultQuality, enableWebp);
+        } catch (Exception e) {
+            log.error("获取商品优化后的图片列表失败: goodsId={}", goodsId, e);
+            // 异常处理：返回原始URL列表
+            return galleries.stream()
+                    .map(g -> {
+                        GoodsImageVO vo = new GoodsImageVO();
+                        vo.setImageUrl(g.getOriginal());
+                        vo.setOriginalUrl(g.getOriginal());
+                        vo.setIsLazyLoad(false);
+                        vo.setLoadPriority(0);
+                        return vo;
+                    })
+                    .collect(Collectors.toList());
+        }
+        return result;
     }
 
     @Override

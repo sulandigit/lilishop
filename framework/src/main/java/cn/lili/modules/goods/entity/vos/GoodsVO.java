@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 商品VO
@@ -35,4 +36,13 @@ public class GoodsVO extends Goods {
 
     @ApiModelProperty(value = "批发商品消费规则列表")
     private List<Wholesale> wholesaleList;
+
+    /**
+     * 图片优化相关字段
+     */
+    @ApiModelProperty(value = "优化后的商品图片列表（包含懒加载信息）")
+    private List<GoodsImageVO> goodsImageList;
+
+    @ApiModelProperty(value = "图片元数据（首屏图片数、懒加载阈值等）")
+    private Map<String, Object> imageMetadata;
 }
