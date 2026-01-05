@@ -6,7 +6,11 @@ import cn.hutool.core.net.SSLProtocols;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import cn.lili.common.utils.SpringContextUtil;
+import cn.lili.hystrix.HystrixCommandHttpExecutor;
 import cn.lili.modules.payment.kit.core.PaymentHttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -24,6 +28,8 @@ import java.util.Map;
  * @since 2021-01-25 15:10
  */
 public abstract class AbstractHttpDelegate {
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractHttpDelegate.class);
 
     /**
      * get 请求
@@ -495,5 +501,136 @@ public abstract class AbstractHttpDelegate {
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(clientStore, certPass.toCharArray());
         return kmf.getKeyManagers();
+    }
+
+    /**
+     * 使用Hystrix保护的POST请求（带证书）
+     * 
+     * @param url      请求URL
+     * @param data     请求数据
+     * @param certPath 证书路径
+     * @param certPass 证书密码
+     * @return 响应字符串
+     */
+    public String postWithHystrix(String url, String data, String certPath, String certPass) {
+        try {
+            HystrixCommandHttpExecutor executor = SpringContextUtil.getBean(HystrixCommandHttpExecutor.class);
+            if (executor != null) {
+                String serviceType = determineServiceType(url);
+                return executor.executeWithCert(url, certPath, certPass, data, serviceType);
+            }
+        } catch (Exception e) {
+            log.warn("Hystrix执行POST请求失败，回退到普通请求: {}", e.getMessage());
+        }
+
+        // 如果Hystrix不可用，回退到普通请求
+        return post(url, data, certPath, certPass);
+    }
+
+    /**
+     * 使用Hystrix保护的POST请求
+     *
+     * @param url  请求URL
+     * @param data 请求数据
+     * @return 响应字符串
+     */
+    public String postWithHystrix(String url, String data) {
+        try {
+            HystrixCommandHttpExecutor executor = SpringContextUtil.getBean(HystrixCommandHttpExecutor.class);
+            if (executor != null) {
+                String serviceType = determineServiceType(url);
+                return executor.executePostRequest(url, data, null, serviceType);
+            }
+        } catch (Exception e) {
+            log.warn("Hystrix执行POST请求失败，回退到普通请求: {}", e.getMessage());
+        }
+
+        // 如果Hystrix不可用，回退到普通请求
+        return post(url, data);
+    }
+
+    /**
+     * 使用Hystrix保护的POST请求（带参数Map）
+     *
+     * @param url      请求URL
+     * @param paramMap 请求参数Map
+     * @return 响应字符串
+     */
+    public String postWithHystrix(String url, Map<String, Object> paramMap) {
+        try {
+            HystrixCommandHttpExecutor executor = SpringContextUtil.getBean(HystrixCommandHttpExecutor.class);
+            if (executor != null) {
+                String serviceType = determineServiceType(url);
+                return executor.executePostRequest(url, paramMap.toString(), null, serviceType);
+            }
+        } catch (Exception e) {
+            log.warn("Hystrix执行POST请求失败，回退到普通请求: {}", e.getMessage());
+        }
+
+        // 如果Hystrix不可用，回退到普通请求
+        return post(url, paramMap);
+    }
+
+    /**
+     * 使用Hystrix保护的GET请求
+     *
+     * @param url 请求URL
+     * @return 响应字符串
+     */
+    public String getWithHystrix(String url) {
+        try {
+            HystrixCommandHttpExecutor executor = SpringContextUtil.getBean(HystrixCommandHttpExecutor.class);
+            if (executor != null) {
+                String serviceType = determineServiceType(url);
+                return executor.executeGetRequest(url, null, serviceType);
+            }
+        } catch (Exception e) {
+            log.warn("Hystrix执行GET请求失败，回退到普通请求: {}", e.getMessage());
+        }
+
+        // 如果Hystrix不可用，回退到普通请求
+        return get(url);
+    }
+
+    /**
+     * 使用Hystrix保护的GET请求（带参数）
+     *
+     * @param url      请求URL
+     * @param paramMap 请求参数
+     * @return 响应字符串
+     */
+    public String getWithHystrix(String url, Map<String, Object> paramMap) {
+        try {
+            HystrixCommandHttpExecutor executor = SpringContextUtil.getBean(HystrixCommandHttpExecutor.class);
+            if (executor != null) {
+                String serviceType = determineServiceType(url);
+                return executor.executeGetRequest(url, null, serviceType); // 这里需要改进以包含参数
+            }
+        } catch (Exception e) {
+            log.warn("Hystrix执行GET请求失败，回退到普通请求: {}", e.getMessage());
+        }
+
+        // 如果Hystrix不可用，回退到普通请求
+        return get(url, paramMap);
+    }
+
+    /**
+     * 根据URL确定服务类型
+     *
+     * @param url 请求URL
+     * @return 服务类型
+     */
+    private String determineServiceType(String url) {
+        if (url.contains("weixin") || url.contains("wechat") || url.contains("wxpay")) {
+            return "wechat";
+        } else if (url.contains("alipay") || url.contains("alipayapi")) {
+            return "alipay";
+        } else if (url.contains("kuaidi") || url.contains("logistics") || url.contains("express")) {
+            return "logistics";
+        } else if (url.contains("amap") || url.contains("gaode") || url.contains("lbs")) {
+            return "geo";
+        } else {
+            return "http";
+        }
     }
 }

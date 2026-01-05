@@ -4,6 +4,8 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.lili.common.enums.ResultCode;
 import cn.lili.common.enums.ResultUtil;
 import cn.lili.common.vo.ResultMessage;
+import cn.lili.hystrix.exception.HystrixException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
@@ -187,6 +189,66 @@ public class GlobalControllerExceptionHandler {
     public ResultMessage<Object> constraintViolationExceptionHandler(HttpServletRequest request, final Exception e, HttpServletResponse response) {
         ConstraintViolationException exception = (ConstraintViolationException) e;
         return ResultUtil.error(ResultCode.PARAMS_ERROR.code(), exception.getMessage());
+    }
+
+    /**
+     * Hystrix异常处理
+     *
+     * @param request  HttpServletRequest
+     * @param e        异常
+     * @param response HttpServletResponse
+     * @return ResultMessage
+     */
+    @ExceptionHandler({HystrixException.class, HystrixRuntimeException.class})
+    @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
+    public ResultMessage<Object> handleHystrixException(HttpServletRequest request, final Exception e, HttpServletResponse response) {
+        
+        log.warn("Hystrix异常处理: ", e);
+        
+        // 如果是HystrixException，获取详细信息
+        if (e instanceof HystrixException) {
+            HystrixException hystrixException = (HystrixException) e;
+            String message = "服务暂时不可用，请稍后重试";
+            
+            // 根据熔断状态和缓存命中情况提供更详细的消息
+            if (hystrixException.isCircuitBreakerOpen()) {
+                message = "服务熔断中，请稍后重试";
+            } else if (hystrixException.isCacheHit()) {
+                message = "服务降级，返回缓存数据";
+            }
+            
+            return ResultUtil.error(ResultCode.ERROR.code(), message);
+        }
+        
+        // 如果是HystrixRuntimeException，处理熔断相关异常
+        if (e instanceof HystrixRuntimeException) {
+            HystrixRuntimeException hystrixRuntimeException = (HystrixRuntimeException) e;
+            String message = "服务调用异常，请稍后重试";
+            
+            // 根据具体的异常类型提供更详细的消息
+            switch (hystrixRuntimeException.getFailureType()) {
+                case TIMEOUT:
+                    message = "服务调用超时，请稍后重试";
+                    break;
+                case SHORTCIRCUIT:
+                    message = "服务熔断中，请稍后重试";
+                    break;
+                case REJECTED_THREAD_EXECUTION:
+                    message = "服务繁忙，请稍后重试";
+                    break;
+                case BAD_REQUEST:
+                    message = "请求参数错误";
+                    break;
+                default:
+                    message = "服务暂时不可用，请稍后重试";
+                    break;
+            }
+            
+            return ResultUtil.error(ResultCode.ERROR.code(), message);
+        }
+        
+        // 默认处理
+        return ResultUtil.error(ResultCode.ERROR.code(), "服务暂时不可用，请稍后重试");
     }
 
     /**
