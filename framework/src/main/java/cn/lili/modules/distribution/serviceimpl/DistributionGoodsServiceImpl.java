@@ -6,10 +6,12 @@ import cn.lili.common.security.context.UserContext;
 import cn.lili.common.security.enums.UserEnums;
 import cn.lili.modules.distribution.entity.dos.Distribution;
 import cn.lili.modules.distribution.entity.dos.DistributionGoods;
+import cn.lili.modules.distribution.entity.dos.DistributionSelectedGoods;
 import cn.lili.modules.distribution.entity.dto.DistributionGoodsSearchParams;
 import cn.lili.modules.distribution.entity.vos.DistributionGoodsVO;
 import cn.lili.modules.distribution.mapper.DistributionGoodsMapper;
 import cn.lili.modules.distribution.service.DistributionGoodsService;
+import cn.lili.modules.distribution.service.DistributionSelectedGoodsService;
 import cn.lili.modules.distribution.service.DistributionService;
 import cn.lili.modules.goods.entity.dos.GoodsSku;
 import cn.lili.modules.goods.service.GoodsSkuService;
@@ -21,6 +23,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -45,6 +48,11 @@ public class DistributionGoodsServiceImpl extends ServiceImpl<DistributionGoodsM
      */
     @Autowired
     private GoodsSkuService goodsSkuService;
+    /**
+     * 已选择分销商品
+     */
+    @Autowired
+    private DistributionSelectedGoodsService distributionSelectedGoodsService;
 
     @Override
     public IPage<DistributionGoodsVO> goodsPage(DistributionGoodsSearchParams searchParams) {
@@ -135,6 +143,17 @@ public class DistributionGoodsServiceImpl extends ServiceImpl<DistributionGoodsM
         DistributionGoods distributionGoods = new DistributionGoods(goodsSku, commission);
         this.save(distributionGoods);
         return distributionGoods;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelDistributionGoods(String id) {
+        //清除分销商已选择分销商品
+        distributionSelectedGoodsService.remove(
+            new QueryWrapper<DistributionSelectedGoods>().eq("distribution_goods_id", id)
+        );
+        //清除分销商品
+        this.removeById(id);
     }
 
 }
