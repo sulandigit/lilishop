@@ -520,7 +520,15 @@ public enum ResultCode {
     ELASTICSEARCH_INDEX_INIT_ERROR(90003, "索引初始化失败！"),
     PURCHASE_ORDER_DEADLINE_ERROR(90004, "供求单，已超过报名截止时间"),
     USER_ADD_ERROR(90005, "用户添加失败"),
-    INDEX_BUILDING(90005, "索引正在生成");
+    INDEX_BUILDING(90005, "索引正在生成"),
+    
+    /**
+     * 加密相关错误码
+     */
+    ENCRYPTION_ERROR(5001, "数据加密失败"),
+    DECRYPTION_ERROR(4001, "数据解密失败"),
+    REPLAY_ATTACK(4003, "请求已过期或重复"),
+    SIGNATURE_ERROR(4002, "签名验证失败");
 
 
     private final Integer code;
