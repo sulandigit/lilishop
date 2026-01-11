@@ -18,8 +18,13 @@ import cn.lili.modules.order.order.entity.vo.OrderSimpleVO;
 import cn.lili.modules.order.order.service.OrderItemService;
 import cn.lili.modules.payment.entity.enums.PaymentMethodEnum;
 import cn.lili.modules.statistics.entity.dto.StatisticsQueryParam;
+import cn.lili.modules.statistics.entity.enums.CompareTypeEnum;
+import cn.lili.modules.statistics.entity.vo.OrderAnalysisVO;
 import cn.lili.modules.statistics.entity.vo.OrderOverviewVO;
+import cn.lili.modules.statistics.entity.vo.OrderSourceAnalysisVO;
 import cn.lili.modules.statistics.entity.vo.OrderStatisticsDataVO;
+import cn.lili.modules.statistics.entity.vo.OrderTimeDistributionVO;
+import cn.lili.modules.statistics.entity.vo.OrderTrendCompareVO;
 import cn.lili.modules.statistics.mapper.OrderStatisticsMapper;
 import cn.lili.modules.statistics.service.OrderStatisticsService;
 import cn.lili.modules.statistics.service.PlatformViewService;
@@ -376,6 +381,232 @@ public class OrderStatisticsServiceImpl extends ServiceImpl<OrderStatisticsMappe
         queryWrapper.eq("flow_type", FlowTypeEnum.PAY.name());
 
         return queryWrapper;
+    }
+
+    @Override
+    public OrderAnalysisVO getOrderAnalysis(StatisticsQueryParam statisticsQueryParam) {
+        Date[] dates = StatisticsDateUtil.getDateArray(statisticsQueryParam);
+        OrderAnalysisVO analysisVO = new OrderAnalysisVO();
+
+        // 构建基础查询条件
+        QueryWrapper queryWrapper = buildBaseQueryWrapper(dates, statisticsQueryParam.getStoreId());
+
+        // 获取基础统计数据
+        Long orderNum = this.baseMapper.countOrders(queryWrapper);
+        Double orderAmount = this.baseMapper.sumOrderAmount(queryWrapper);
+        Long paymentOrderNum = this.baseMapper.countPaymentOrders(queryWrapper);
+        Double paymentAmount = this.baseMapper.sumPaymentAmount(queryWrapper);
+        Long paymentsNum = this.baseMapper.countPaymentCustomers(queryWrapper);
+
+        analysisVO.setOrderNum(orderNum);
+        analysisVO.setOrderAmount(orderAmount);
+        analysisVO.setPaymentOrderNum(paymentOrderNum);
+        analysisVO.setPaymentAmount(paymentAmount);
+        analysisVO.setPaymentsNum(paymentsNum);
+
+        // 计算客单价
+        analysisVO.setAvgOrderAmount(CurrencyUtil.div(orderAmount, orderNum, 2));
+        analysisVO.setAvgPaymentAmount(CurrencyUtil.div(paymentAmount, paymentOrderNum, 2));
+        analysisVO.setAvgCustomerValue(CurrencyUtil.div(paymentAmount, paymentsNum, 2));
+
+        // 计算复购率
+        Long repeatCustomerNum = this.baseMapper.countRepeatCustomers(queryWrapper);
+        Long newCustomerNum = this.baseMapper.countNewCustomers(queryWrapper, dates[0]);
+        analysisVO.setRepeatCustomerNum(repeatCustomerNum);
+        analysisVO.setNewCustomerNum(newCustomerNum);
+
+        // 复购率 = 复购客户数 / 总付款客户数
+        Double repeatRate = CurrencyUtil.div(repeatCustomerNum, paymentsNum, 4);
+        if (repeatRate > 1) {
+            repeatRate = 1d;
+        }
+        analysisVO.setRepeatPurchaseRate(CurrencyUtil.mul(repeatRate, 100) + "%");
+
+        // 计算平均每单商品件数
+        QueryWrapper goodsQueryWrapper = buildBaseQueryWrapper(dates, statisticsQueryParam.getStoreId());
+        Long totalGoodsNum = this.baseMapper.sumGoodsNum(goodsQueryWrapper);
+        analysisVO.setAvgGoodsNumPerOrder(CurrencyUtil.div(totalGoodsNum, paymentOrderNum, 2));
+        analysisVO.setAvgSkuNumPerOrder(CurrencyUtil.div(totalGoodsNum, paymentOrderNum, 2));
+
+        return analysisVO;
+    }
+
+    @Override
+    public OrderTrendCompareVO getTrendCompare(StatisticsQueryParam statisticsQueryParam, String compareType) {
+        OrderTrendCompareVO compareVO = new OrderTrendCompareVO();
+
+        // 获取当前期时间范围
+        Date[] currentDates = StatisticsDateUtil.getDateArray(statisticsQueryParam);
+
+        // 根据对比类型获取对比期时间范围
+        Date[] compareDates;
+        CompareTypeEnum type = CompareTypeEnum.valueOf(compareType);
+        if (CompareTypeEnum.YEAR_ON_YEAR.equals(type)) {
+            compareDates = StatisticsDateUtil.getYearOnYearDateArray(statisticsQueryParam);
+        } else {
+            compareDates = StatisticsDateUtil.getMonthOnMonthDateArray(statisticsQueryParam);
+        }
+
+        compareVO.setCompareType(type);
+        compareVO.setCurrentPeriodStart(currentDates[0]);
+        compareVO.setCurrentPeriodEnd(currentDates[1]);
+        compareVO.setComparePeriodStart(compareDates[0]);
+        compareVO.setComparePeriodEnd(compareDates[1]);
+
+        // 获取当前期数据
+        QueryWrapper currentWrapper = buildBaseQueryWrapper(currentDates, statisticsQueryParam.getStoreId());
+        Long currentOrderNum = this.baseMapper.countOrders(currentWrapper);
+        Long currentPaymentOrderNum = this.baseMapper.countPaymentOrders(currentWrapper);
+        Double currentOrderAmount = this.baseMapper.sumOrderAmount(currentWrapper);
+        Double currentPaymentAmount = this.baseMapper.sumPaymentAmount(currentWrapper);
+
+        compareVO.setCurrentPeriodOrderNum(currentOrderNum);
+        compareVO.setCurrentPeriodPaymentOrderNum(currentPaymentOrderNum);
+        compareVO.setCurrentPeriodOrderAmount(currentOrderAmount);
+        compareVO.setCurrentPeriodPaymentAmount(currentPaymentAmount);
+
+        // 获取对比期数据
+        QueryWrapper compareWrapper = buildBaseQueryWrapper(compareDates, statisticsQueryParam.getStoreId());
+        Long compareOrderNum = this.baseMapper.countOrders(compareWrapper);
+        Long comparePaymentOrderNum = this.baseMapper.countPaymentOrders(compareWrapper);
+        Double compareOrderAmount = this.baseMapper.sumOrderAmount(compareWrapper);
+        Double comparePaymentAmount = this.baseMapper.sumPaymentAmount(compareWrapper);
+
+        compareVO.setComparePeriodOrderNum(compareOrderNum);
+        compareVO.setComparePeriodPaymentOrderNum(comparePaymentOrderNum);
+        compareVO.setComparePeriodOrderAmount(compareOrderAmount);
+        compareVO.setComparePeriodPaymentAmount(comparePaymentAmount);
+
+        // 计算增长率
+        compareVO.setOrderNumGrowthRate(calculateGrowthRate(currentOrderNum, compareOrderNum));
+        compareVO.setPaymentOrderNumGrowthRate(calculateGrowthRate(currentPaymentOrderNum, comparePaymentOrderNum));
+        compareVO.setOrderAmountGrowthRate(calculateGrowthRate(currentOrderAmount, compareOrderAmount));
+        compareVO.setPaymentAmountGrowthRate(calculateGrowthRate(currentPaymentAmount, comparePaymentAmount));
+
+        return compareVO;
+    }
+
+    @Override
+    public List<OrderTimeDistributionVO> getTimeDistribution(StatisticsQueryParam statisticsQueryParam) {
+        Date[] dates = StatisticsDateUtil.getDateArray(statisticsQueryParam);
+        QueryWrapper queryWrapper = buildBaseQueryWrapper(dates, statisticsQueryParam.getStoreId());
+
+        // 从数据库获取数据
+        List<OrderTimeDistributionVO> dbData = this.baseMapper.getHourlyDistribution(queryWrapper);
+
+        // 创建完整的24小时数据
+        List<OrderTimeDistributionVO> result = new ArrayList<>();
+        Map<Integer, OrderTimeDistributionVO> hourMap = new HashMap<>();
+
+        // 将数据库数据放入Map
+        for (OrderTimeDistributionVO vo : dbData) {
+            hourMap.put(vo.getHour(), vo);
+        }
+
+        // 填充完整的24小时数据
+        for (int hour = 0; hour < 24; hour++) {
+            OrderTimeDistributionVO vo = hourMap.get(hour);
+            if (vo == null) {
+                vo = new OrderTimeDistributionVO();
+                vo.setHour(hour);
+                vo.setHourRange(String.format("%02d:00-%02d:00", hour, hour + 1));
+                vo.setOrderNum(0L);
+                vo.setPaymentOrderNum(0L);
+                vo.setOrderAmount(0D);
+                vo.setPaymentAmount(0D);
+            }
+            // 计算转化率
+            Double conversionRate = CurrencyUtil.div(vo.getPaymentOrderNum(), vo.getOrderNum(), 4);
+            if (conversionRate > 1) {
+                conversionRate = 1d;
+            }
+            vo.setConversionRate(CurrencyUtil.mul(conversionRate, 100) + "%");
+            result.add(vo);
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<OrderSourceAnalysisVO> getSourceAnalysis(StatisticsQueryParam statisticsQueryParam) {
+        Date[] dates = StatisticsDateUtil.getDateArray(statisticsQueryParam);
+        QueryWrapper queryWrapper = buildBaseQueryWrapper(dates, statisticsQueryParam.getStoreId());
+
+        // 从数据库获取数据
+        List<OrderSourceAnalysisVO> result = this.baseMapper.getClientTypeStatistics(queryWrapper);
+
+        // 计算总量用于占比计算
+        Long totalOrderNum = 0L;
+        Double totalOrderAmount = 0D;
+        for (OrderSourceAnalysisVO vo : result) {
+            totalOrderNum += vo.getOrderNum();
+            totalOrderAmount = CurrencyUtil.add(totalOrderAmount, vo.getOrderAmount());
+        }
+
+        // 计算占比并设置客户端名称
+        for (OrderSourceAnalysisVO vo : result) {
+            // 订单数占比
+            Double percentage = CurrencyUtil.div(vo.getOrderNum(), totalOrderNum, 4);
+            vo.setPercentage(CurrencyUtil.mul(percentage, 100) + "%");
+
+            // 金额占比
+            Double amountPercentage = CurrencyUtil.div(vo.getOrderAmount(), totalOrderAmount, 4);
+            vo.setAmountPercentage(CurrencyUtil.mul(amountPercentage, 100) + "%");
+
+            // 设置客户端类型名称
+            vo.setClientTypeName(getClientTypeName(vo.getClientType()));
+        }
+
+        return result;
+    }
+
+    /**
+     * 构建基础查询条件
+     */
+    private QueryWrapper buildBaseQueryWrapper(Date[] dates, String storeId) {
+        QueryWrapper queryWrapper = Wrappers.query();
+        queryWrapper.between("create_time", dates[0], dates[1]);
+        queryWrapper.eq(StringUtils.isNotEmpty(storeId), "store_id", storeId);
+        return queryWrapper;
+    }
+
+    /**
+     * 计算增长率
+     */
+    private String calculateGrowthRate(Number current, Number compare) {
+        if (compare == null || compare.doubleValue() == 0) {
+            if (current == null || current.doubleValue() == 0) {
+                return "0%";
+            }
+            return "100%";
+        }
+        Double rate = CurrencyUtil.div(
+                CurrencyUtil.sub(current.doubleValue(), compare.doubleValue()),
+                compare.doubleValue(),
+                4
+        );
+        return CurrencyUtil.mul(rate, 100) + "%";
+    }
+
+    /**
+     * 获取客户端类型名称
+     */
+    private String getClientTypeName(String clientType) {
+        if (clientType == null) {
+            return "未知";
+        }
+        switch (clientType) {
+            case "PC":
+                return "PC端";
+            case "H5":
+                return "H5端";
+            case "WECHAT_MP":
+                return "微信小程序";
+            case "APP":
+                return "APP";
+            default:
+                return clientType;
+        }
     }
 
 }

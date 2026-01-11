@@ -154,4 +154,69 @@ public class StatisticsDateUtil {
         return dateArray;
     }
 
+    /**
+     * 计算同比时间范围（去年同期）
+     *
+     * @param statisticsQueryParam 查询参数
+     * @return 去年同期的时间范围
+     */
+    public static Date[] getYearOnYearDateArray(StatisticsQueryParam statisticsQueryParam) {
+        Date[] currentDates = getDateArray(statisticsQueryParam);
+        Date[] yearOnYearDates = new Date[2];
+
+        Calendar calendar = Calendar.getInstance();
+
+        // 计算去年同期开始时间
+        calendar.setTime(currentDates[0]);
+        calendar.add(Calendar.YEAR, -1);
+        yearOnYearDates[0] = calendar.getTime();
+
+        // 计算去年同期结束时间
+        calendar.setTime(currentDates[1]);
+        calendar.add(Calendar.YEAR, -1);
+        yearOnYearDates[1] = calendar.getTime();
+
+        return yearOnYearDates;
+    }
+
+    /**
+     * 计算环比时间范围（上一周期）
+     * 根据当前查询的时间跨度，计算上一个相同跨度的时间范围
+     *
+     * @param statisticsQueryParam 查询参数
+     * @return 上一周期的时间范围
+     */
+    public static Date[] getMonthOnMonthDateArray(StatisticsQueryParam statisticsQueryParam) {
+        Date[] currentDates = getDateArray(statisticsQueryParam);
+        Date[] monthOnMonthDates = new Date[2];
+
+        // 计算当前时间范围的天数
+        long diffInMillies = currentDates[1].getTime() - currentDates[0].getTime();
+        long diffInDays = diffInMillies / (1000 * 60 * 60 * 24) + 1;
+
+        Calendar calendar = Calendar.getInstance();
+
+        // 如果是按月查询，则计算上一个月
+        if (statisticsQueryParam.getMonth() != null && statisticsQueryParam.getYear() != null) {
+            calendar.setTime(currentDates[0]);
+            calendar.add(Calendar.MONTH, -1);
+            monthOnMonthDates[0] = calendar.getTime();
+
+            calendar.setTime(currentDates[1]);
+            calendar.add(Calendar.MONTH, -1);
+            monthOnMonthDates[1] = calendar.getTime();
+        } else {
+            // 否则按天数向前推
+            calendar.setTime(currentDates[0]);
+            calendar.add(Calendar.DAY_OF_YEAR, (int) -diffInDays);
+            monthOnMonthDates[0] = calendar.getTime();
+
+            calendar.setTime(currentDates[1]);
+            calendar.add(Calendar.DAY_OF_YEAR, (int) -diffInDays);
+            monthOnMonthDates[1] = calendar.getTime();
+        }
+
+        return monthOnMonthDates;
+    }
+
 }
