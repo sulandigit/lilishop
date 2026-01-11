@@ -25,7 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.constraints.NotNull;
 
 /**
- * 店铺端,商家登录接口
+ * Store Passport Controller
+ * Handles store/seller authentication operations including login, logout, and password management.
  *
  * @author Chopper
  * @since 2020/12/22 15:02
@@ -37,17 +38,31 @@ import javax.validation.constraints.NotNull;
 public class StorePassportController {
 
     /**
-     * 会员
+     * Member service for handling member-related operations
      */
     @Autowired
     private MemberService memberService;
 
+    /**
+     * SMS utility for sending and verifying SMS codes
+     */
     @Autowired
     private SmsUtil smsUtil;
 
+    /**
+     * Verification service for handling verification code operations
+     */
     @Autowired
     private VerificationService verificationService;
 
+    /**
+     * User login with username and password
+     *
+     * @param username the username for login
+     * @param password the password for login
+     * @param uuid     the verification code UUID from request header
+     * @return login token information
+     */
     @ApiOperation(value = "登录接口")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "username", value = "用户名", required = true, paramType = "query"),
@@ -63,6 +78,14 @@ public class StorePassportController {
         }
     }
 
+    /**
+     * User login with SMS verification code
+     *
+     * @param mobile the mobile phone number
+     * @param code   the SMS verification code
+     * @param uuid   the verification code UUID from request header
+     * @return login token information
+     */
     @ApiOperation(value = "短信登录接口")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "mobile", value = "手机号", required = true, paramType = "query"),
@@ -79,6 +102,11 @@ public class StorePassportController {
         }
     }
 
+    /**
+     * User logout
+     *
+     * @return success result
+     */
     @ApiOperation(value = "注销接口")
     @PostMapping("/logout")
     public ResultMessage<Object> logout() {
@@ -86,6 +114,15 @@ public class StorePassportController {
         return ResultUtil.success();
     }
 
+    /**
+     * Reset password via SMS verification
+     * Verifies SMS code and caches member info for password reset (valid for 3 minutes)
+     *
+     * @param mobile the mobile phone number
+     * @param code   the SMS verification code
+     * @param uuid   the verification code UUID from request header
+     * @return success result
+     */
     @ApiOperation(value = "通过短信重置密码")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "mobile", value = "手机号", required = true, paramType = "query"),
@@ -95,15 +132,22 @@ public class StorePassportController {
     public ResultMessage<Member> resetByMobile(@NotNull(message = "手机号为空") @RequestParam String mobile,
                                                @NotNull(message = "验证码为空") @RequestParam String code,
                                                @RequestHeader String uuid) {
-        //校验短信验证码是否正确
+        // Verify if SMS verification code is correct
         if (smsUtil.verifyCode(mobile, VerificationEnums.FIND_USER, uuid, code)) {
-            //校验是否通过手机号可获取会员,存在则将会员信息存入缓存，有效时间3分钟
+            // Verify if member exists by mobile, cache member info for 3 minutes if exists
             memberService.findByMobile(uuid, mobile);
             return ResultUtil.success();
         } else {
             throw new ServiceException(ResultCode.VERIFICATION_SMS_CHECKED_ERROR);
         }
     }
+    /**
+     * Reset password after SMS verification
+     *
+     * @param password the new password to set
+     * @param uuid     the verification code UUID from request header
+     * @return updated member information
+     */
     @ApiOperation(value = "修改密码")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "密码", required = true, paramType = "query")
@@ -113,6 +157,13 @@ public class StorePassportController {
         return ResultUtil.data(memberService.resetByMobile(uuid, password));
     }
 
+    /**
+     * Modify password with old password verification
+     *
+     * @param password    the current password for verification
+     * @param newPassword the new password to set
+     * @return updated member information
+     */
     @ApiOperation(value = "修改密码")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "旧密码", required = true, paramType = "query"),
@@ -128,6 +179,12 @@ public class StorePassportController {
         return ResultUtil.data(memberService.modifyPass(password, newPassword));
     }
 
+    /**
+     * Refresh access token using refresh token
+     *
+     * @param refreshToken the refresh token
+     * @return new token information
+     */
     @ApiOperation(value = "刷新token")
     @GetMapping("/refresh/{refreshToken}")
     public ResultMessage<Object> refreshToken(@NotNull(message = "刷新token不能为空") @PathVariable String refreshToken) {
