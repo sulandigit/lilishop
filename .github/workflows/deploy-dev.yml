@@ -1,0 +1,148 @@
+name: Deploy to Kubernetes (Dev)
+
+on:
+  workflow_run:
+    workflows: ["Docker Build and Push"]
+    branches: [develop]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        type: string
+
+env:
+  REGISTRY: registry.cn-beijing.aliyuncs.com
+  NAMESPACE: lili-images
+  K8S_NAMESPACE: lilishop-service
+
+# 防止同一环境并发部署
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Dev Environment
+    runs-on: ubuntu-latest
+    # 仅当 Docker 构建成功时才部署
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    environment:
+      name: development
+      url: http://dev.lilishop.cn
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG="${{ inputs.image_tag }}"
+          else
+            # 从 develop 分支构建的镜像 tag
+            VERSION=$(grep -m1 '<revision>' pom.xml | sed 's/.*<revision>\(.*\)<\/revision>.*/\1/')
+            SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
+            TAG="${VERSION}-dev-${SHORT_SHA}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Deploying image tag: $TAG"
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster connection
+        run: kubectl cluster-info
+
+      - name: Create namespace if not exists
+        run: kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update deployment images
+        run: |
+          IMAGE_TAG="${{ steps.tag.outputs.tag }}"
+          
+          # 更新各服务的镜像
+          for module in buyer-api seller-api manager-api common-api im-api consumer admin; do
+            echo "Updating $module to ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/$module:$IMAGE_TAG"
+            kubectl set image deployment/$module \
+              $module=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/$module:$IMAGE_TAG \
+              -n ${{ env.K8S_NAMESPACE }} || echo "Deployment $module not found, skipping..."
+          done
+
+      - name: Wait for rollout
+        run: |
+          for module in buyer-api seller-api manager-api common-api; do
+            echo "Waiting for $module rollout..."
+            kubectl rollout status deployment/$module -n ${{ env.K8S_NAMESPACE }} --timeout=300s || true
+          done
+
+      - name: Verify deployment
+        run: |
+          echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Health check
+        run: |
+          echo "Checking service health..."
+          kubectl get svc -n ${{ env.K8S_NAMESPACE }}
+          
+          # 等待 pods 就绪
+          sleep 30
+          
+          # 检查 pod 状态
+          READY_PODS=$(kubectl get pods -n ${{ env.K8S_NAMESPACE }} -o jsonpath='{.items[*].status.phase}' | tr ' ' '\n' | grep -c Running || echo "0")
+          TOTAL_PODS=$(kubectl get pods -n ${{ env.K8S_NAMESPACE }} --no-headers | wc -l)
+          
+          echo "Ready pods: $READY_PODS / $TOTAL_PODS"
+          
+          if [ "$READY_PODS" -lt "$TOTAL_PODS" ]; then
+            echo "Warning: Not all pods are running"
+            kubectl get pods -n ${{ env.K8S_NAMESPACE }}
+          fi
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Info" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | Development |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Tag | ${{ steps.tag.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Namespace | ${{ env.K8S_NAMESPACE }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    
+    steps:
+      - name: Notify on success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "Deployment to dev environment succeeded!"
+          # 可以在这里添加钉钉/企业微信通知
+          # curl -X POST "${{ secrets.DINGTALK_WEBHOOK }}" \
+          #   -H 'Content-Type: application/json' \
+          #   -d '{"msgtype": "text", "text": {"content": "Dev 环境部署成功"}}'
+
+      - name: Notify on failure
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "Deployment to dev environment failed!"
+          # 添加失败通知
