@@ -15,6 +15,7 @@ import cn.lili.modules.member.service.MemberService;
 import cn.lili.modules.sms.SmsUtil;
 import cn.lili.modules.verification.entity.enums.VerificationEnums;
 import cn.lili.modules.verification.service.VerificationService;
+import cn.lili.modules.security.aspect.annotation.SecurityLog;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -130,6 +131,7 @@ public class MemberBuyerController {
 
 
     @ApiOperation(value = "登录接口")
+    @SecurityLog(operationType = "MEMBER_LOGIN", securityLevel = "INFO", description = "会员登录操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "username", value = "用户名", required = true, paramType = "query"),
             @ApiImplicitParam(name = "password", value = "密码", required = true, paramType = "query")
@@ -143,6 +145,7 @@ public class MemberBuyerController {
     }
 
     @ApiOperation(value = "注销接口")
+    @SecurityLog(operationType = "MEMBER_LOGOUT", securityLevel = "INFO", description = "会员注销操作")
     @PostMapping("/logout")
     public ResultMessage<Object> logout() {
         this.memberService.logout(UserEnums.MEMBER);
@@ -150,6 +153,7 @@ public class MemberBuyerController {
     }
 
     @ApiOperation(value = "短信登录接口")
+    @SecurityLog(operationType = "MEMBER_SMS_LOGIN", securityLevel = "INFO", description = "会员短信登录操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "mobile", value = "手机号", required = true, paramType = "query"),
             @ApiImplicitParam(name = "code", value = "验证码", required = true, paramType = "query")
@@ -192,6 +196,7 @@ public class MemberBuyerController {
     }
 
     @ApiOperation(value = "注册用户")
+    @SecurityLog(operationType = "MEMBER_REGISTER", securityLevel = "INFO", description = "会员注册操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "username", value = "用户名", required = true, paramType = "query"),
             @ApiImplicitParam(name = "password", value = "密码", required = true, paramType = "query"),
@@ -257,6 +262,7 @@ public class MemberBuyerController {
     }
 
     @ApiOperation(value = "修改密码")
+    @SecurityLog(operationType = "MEMBER_MODIFY_PASSWORD", securityLevel = "HIGH", description = "会员修改密码操作")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "旧密码", required = true, paramType = "query"),
             @ApiImplicitParam(name = "newPassword", value = "新密码", required = true, paramType = "query")
@@ -287,6 +293,7 @@ public class MemberBuyerController {
     }
 
     @ApiOperation(value = "注销账号")
+    @SecurityLog(operationType = "MEMBER_ACCOUNT_CANCELLATION", securityLevel = "HIGH", description = "会员注销账号操作")
     @PutMapping("/cancellation")
     public ResultMessage<Member> cancellation() {
         memberService.cancellation();
