@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * SeatController
- *
+ * Store Seat Controller
+ * Provides seat management functionality for store operators
+ * Automatically retrieves store information from the current logged-in user context
+ * 
  * @author Chopper
  * @version v1.0
  * 2022-02-10 11:50
@@ -28,10 +30,18 @@ import java.util.List;
 @Transactional(rollbackFor = Exception.class)
 public class SeatStoreController {
 
-
+    /**
+     * Seat service for handling seat-related business logic
+     */
     @Autowired
     private SeatService seatService;
 
+    /**
+     * Get paginated list of seats for the current store
+     * Retrieves the store/tenant ID from the current logged-in user's context
+     * 
+     * @return ResultMessage containing a list of SeatVO objects for the current store
+     */
     @ApiOperation(value = "分页获取坐席")
     @GetMapping("/list")
     public ResultMessage<List<SeatVO>> getSeats() {
