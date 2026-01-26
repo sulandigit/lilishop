@@ -32,6 +32,17 @@ public class MemberMessageBuyerController {
     @Autowired
     private MemberMessageService memberMessageService;
 
+    /**
+     * 分页获取会员站内消息
+     * <p>
+     * 根据查询条件分页查询当前登录会员的站内消息列表，
+     * 自动设置当前登录用户ID作为查询条件
+     * </p>
+     *
+     * @param memberMessageQueryVO 会员消息查询条件对象，包含消息状态、标题等筛选条件
+     * @param page                 分页参数，包含页码和每页数量
+     * @return 分页后的会员站内消息列表
+     */
     @ApiOperation(value = "分页获取会员站内消息")
     @GetMapping
     public ResultMessage<IPage<MemberMessage>> page(MemberMessageQueryVO memberMessageQueryVO, PageVO page) {
@@ -39,6 +50,15 @@ public class MemberMessageBuyerController {
         return ResultUtil.data(memberMessageService.getPage(memberMessageQueryVO, page));
     }
 
+    /**
+     * 标记消息为已读状态
+     * <p>
+     * 将指定的会员消息状态更新为已读（ALREADY_READY）
+     * </p>
+     *
+     * @param messageId 会员消息ID
+     * @return 操作结果，true表示更新成功，false表示更新失败
+     */
     @ApiOperation(value = "消息已读")
     @ApiImplicitParam(name = "messageId", value = "会员消息id", required = true, paramType = "path")
     @PutMapping("/{message_id}")
@@ -46,6 +66,16 @@ public class MemberMessageBuyerController {
         return ResultUtil.data(memberMessageService.editStatus(MessageStatusEnum.ALREADY_READY.name(), messageId));
     }
 
+    /**
+     * 将消息放入回收站
+     * <p>
+     * 将指定的会员消息状态更新为已删除（ALREADY_REMOVE），
+     * 实现逻辑删除，消息会被移至回收站而非物理删除
+     * </p>
+     *
+     * @param messageId 会员消息ID
+     * @return 操作结果，true表示删除成功，false表示删除失败
+     */
     @ApiOperation(value = "消息放入回收站")
     @ApiImplicitParam(name = "messageId", value = "会员消息id", required = true, paramType = "path")
     @DeleteMapping("/{message_id}")
