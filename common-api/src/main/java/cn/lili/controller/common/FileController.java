@@ -17,14 +17,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
 /**
- * 文件管理管理接口
+ * 文件管理接口
  *
  * @author Chopper
  * @since 2020/11/26 15:41
@@ -32,30 +31,27 @@ import java.util.List;
 @RestController
 @Api(tags = "文件管理接口")
 @RequestMapping("/common/common/file")
+@RequiredArgsConstructor
 public class FileController {
 
-    @Autowired
-    private FileService fileService;
+    private final FileService fileService;
 
-    @Autowired
-    private Cache cache;
+    private final Cache cache;
 
     @ApiOperation(value = "获取自己的图片资源")
     @GetMapping
     @ApiImplicitParam(name = "title", value = "名称模糊匹配")
     public ResultMessage<IPage<File>> getFileList(@RequestHeader String accessToken, FileOwnerDTO fileOwnerDTO) {
-
         AuthUser authUser = UserContext.getAuthUser(cache, accessToken);
         if (authUser == null) {
-            ResponseUtil.output(ThreadContextHolder.getHttpResponse(), 403, ResponseUtil.resultMap(false,
-                    403, "登录已失效，请重新登录"));
+            ResponseUtil.output(ThreadContextHolder.getHttpResponse(), 403,
+                    ResponseUtil.resultMap(false, 403, "登录已失效，请重新登录"));
             return null;
         }
-        //只有买家才写入自己id
+        // 根据用户角色设置 ownerId
         if (authUser.getRole().equals(UserEnums.MEMBER)) {
             fileOwnerDTO.setOwnerId(authUser.getId());
-        }//如果是店铺，则写入店铺id
-        else if (authUser.getRole().equals(UserEnums.STORE)) {
+        } else if (authUser.getRole().equals(UserEnums.STORE)) {
             fileOwnerDTO.setOwnerId(authUser.getStoreId());
         }
         fileOwnerDTO.setUserEnums(authUser.getRole().name());
@@ -64,39 +60,58 @@ public class FileController {
 
     @ApiOperation(value = "文件重命名")
     @PostMapping(value = "/rename")
-    public ResultMessage<File> upload(@RequestHeader String accessToken, String id, String newName) {
-
-        AuthUser authUser = UserContext.getAuthUser(cache, accessToken);
+    public ResultMessage<File> rename(@RequestHeader String accessToken, String id, String newName) {
+        AuthUser authUser = getAuthUserOrThrow(accessToken);
         File file = fileService.getById(id);
-        file.setName(newName);
-        //操作图片属性判定
-        switch (authUser.getRole()) {
-            case MEMBER:
-                if (file.getOwnerId().equals(authUser.getId()) && file.getUserEnums().equals(authUser.getRole().name())) {
-                    break;
-                }
-                throw new ServiceException(ResultCode.USER_AUTHORITY_ERROR);
-            case STORE:
-                if (file.getOwnerId().equals(authUser.getStoreId()) && file.getUserEnums().equals(authUser.getRole().name())) {
-                    break;
-                }
-                throw new ServiceException(ResultCode.USER_AUTHORITY_ERROR);
-            case MANAGER:
-                break;
-            default:
-                throw new ServiceException(ResultCode.USER_AUTHORITY_ERROR);
+        if (file == null) {
+            throw new ServiceException(ResultCode.FILE_NOT_EXIST_ERROR);
         }
+        checkFilePermission(authUser, file);
+        file.setName(newName);
         fileService.updateById(file);
         return ResultUtil.data(file);
     }
 
     @ApiOperation(value = "文件删除")
     @DeleteMapping(value = "/delete/{ids}")
-    public ResultMessage delete(@RequestHeader String accessToken, @PathVariable List<String> ids) {
-
-        AuthUser authUser = UserContext.getAuthUser(cache, accessToken);
+    public ResultMessage<Object> delete(@RequestHeader String accessToken, @PathVariable List<String> ids) {
+        AuthUser authUser = getAuthUserOrThrow(accessToken);
         fileService.batchDelete(ids, authUser);
         return ResultUtil.success();
     }
 
+    /**
+     * 获取认证用户，若不存在则抛出异常
+     */
+    private AuthUser getAuthUserOrThrow(String accessToken) {
+        AuthUser authUser = UserContext.getAuthUser(cache, accessToken);
+        if (authUser == null) {
+            throw new ServiceException(ResultCode.USER_AUTH_EXPIRED);
+        }
+        return authUser;
+    }
+
+    /**
+     * 校验用户对文件的操作权限
+     */
+    private void checkFilePermission(AuthUser authUser, File file) {
+        switch (authUser.getRole()) {
+            case MEMBER:
+                if (file.getOwnerId().equals(authUser.getId())
+                        && file.getUserEnums().equals(authUser.getRole().name())) {
+                    return;
+                }
+                throw new ServiceException(ResultCode.USER_AUTHORITY_ERROR);
+            case STORE:
+                if (file.getOwnerId().equals(authUser.getStoreId())
+                        && file.getUserEnums().equals(authUser.getRole().name())) {
+                    return;
+                }
+                throw new ServiceException(ResultCode.USER_AUTHORITY_ERROR);
+            case MANAGER:
+                return;
+            default:
+                throw new ServiceException(ResultCode.USER_AUTHORITY_ERROR);
+        }
+    }
 }
