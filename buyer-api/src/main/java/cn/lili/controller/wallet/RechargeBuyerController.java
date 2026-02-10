@@ -10,7 +10,6 @@ import cn.lili.modules.wallet.service.RechargeService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,8 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/buyer/wallet/recharge")
 public class RechargeBuyerController {
 
-    @Autowired
-    private RechargeService rechargeService;
+    private final RechargeService rechargeService;
+
+    public RechargeBuyerController(RechargeService rechargeService) {
+        this.rechargeService = rechargeService;
+    }
 
     @ApiOperation(value = "分页获取预存款充值记录")
     @GetMapping
