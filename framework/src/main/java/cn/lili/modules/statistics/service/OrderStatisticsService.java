@@ -6,8 +6,12 @@ import cn.lili.modules.order.order.entity.dos.Order;
 import cn.lili.modules.order.order.entity.vo.OrderSimpleVO;
 import cn.lili.modules.payment.entity.enums.PaymentMethodEnum;
 import cn.lili.modules.statistics.entity.dto.StatisticsQueryParam;
+import cn.lili.modules.statistics.entity.vo.OrderAnalysisVO;
 import cn.lili.modules.statistics.entity.vo.OrderOverviewVO;
+import cn.lili.modules.statistics.entity.vo.OrderSourceAnalysisVO;
 import cn.lili.modules.statistics.entity.vo.OrderStatisticsDataVO;
+import cn.lili.modules.statistics.entity.vo.OrderTimeDistributionVO;
+import cn.lili.modules.statistics.entity.vo.OrderTrendCompareVO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -130,4 +134,41 @@ public interface OrderStatisticsService extends IService<Order> {
      * @return
      */
     Double getRefundRate(Date[] dates);
+
+    /**
+     * 订单分析增强
+     * 包含客单价、复购率等高级分析指标
+     *
+     * @param statisticsQueryParam 查询参数
+     * @return 订单分析VO
+     */
+    OrderAnalysisVO getOrderAnalysis(StatisticsQueryParam statisticsQueryParam);
+
+    /**
+     * 趋势对比分析
+     * 支持同比/环比分析
+     *
+     * @param statisticsQueryParam 查询参数
+     * @param compareType          对比类型（YEAR_ON_YEAR-同比, MONTH_ON_MONTH-环比）
+     * @return 趋势对比VO
+     */
+    OrderTrendCompareVO getTrendCompare(StatisticsQueryParam statisticsQueryParam, String compareType);
+
+    /**
+     * 时段分布统计
+     * 按小时统计订单分布
+     *
+     * @param statisticsQueryParam 查询参数
+     * @return 时段分布列表（24小时）
+     */
+    List<OrderTimeDistributionVO> getTimeDistribution(StatisticsQueryParam statisticsQueryParam);
+
+    /**
+     * 订单来源分析
+     * 按客户端类型统计订单
+     *
+     * @param statisticsQueryParam 查询参数
+     * @return 来源分析列表
+     */
+    List<OrderSourceAnalysisVO> getSourceAnalysis(StatisticsQueryParam statisticsQueryParam);
 }

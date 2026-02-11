@@ -6,8 +6,12 @@ import cn.lili.common.vo.ResultMessage;
 import cn.lili.modules.order.aftersale.entity.dos.AfterSale;
 import cn.lili.modules.order.order.entity.vo.OrderSimpleVO;
 import cn.lili.modules.statistics.entity.dto.StatisticsQueryParam;
+import cn.lili.modules.statistics.entity.vo.OrderAnalysisVO;
 import cn.lili.modules.statistics.entity.vo.OrderOverviewVO;
+import cn.lili.modules.statistics.entity.vo.OrderSourceAnalysisVO;
 import cn.lili.modules.statistics.entity.vo.OrderStatisticsDataVO;
+import cn.lili.modules.statistics.entity.vo.OrderTimeDistributionVO;
+import cn.lili.modules.statistics.entity.vo.OrderTrendCompareVO;
 import cn.lili.modules.statistics.service.AfterSaleStatisticsService;
 import cn.lili.modules.statistics.service.OrderStatisticsService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -76,5 +80,49 @@ public class OrderStatisticsManagerController {
     @GetMapping("/refund")
     public ResultMessage<IPage<AfterSale>> refund(StatisticsQueryParam statisticsQueryParam, PageVO pageVO) {
         return ResultUtil.data(afterSaleStatisticsService.getStatistics(statisticsQueryParam, pageVO));
+    }
+
+    @ApiOperation(value = "订单分析增强（客单价、复购率等）")
+    @GetMapping("/analysis")
+    public ResultMessage<OrderAnalysisVO> analysis(StatisticsQueryParam statisticsQueryParam) {
+        try {
+            return ResultUtil.data(orderStatisticsService.getOrderAnalysis(statisticsQueryParam));
+        } catch (Exception e) {
+            log.error("订单分析增强统计错误", e);
+        }
+        return null;
+    }
+
+    @ApiOperation(value = "趋势对比分析（同比/环比）")
+    @GetMapping("/trend-compare")
+    public ResultMessage<OrderTrendCompareVO> trendCompare(StatisticsQueryParam statisticsQueryParam, String compareType) {
+        try {
+            return ResultUtil.data(orderStatisticsService.getTrendCompare(statisticsQueryParam, compareType));
+        } catch (Exception e) {
+            log.error("趋势对比分析错误", e);
+        }
+        return null;
+    }
+
+    @ApiOperation(value = "时段分布统计（24小时）")
+    @GetMapping("/time-distribution")
+    public ResultMessage<List<OrderTimeDistributionVO>> timeDistribution(StatisticsQueryParam statisticsQueryParam) {
+        try {
+            return ResultUtil.data(orderStatisticsService.getTimeDistribution(statisticsQueryParam));
+        } catch (Exception e) {
+            log.error("时段分布统计错误", e);
+        }
+        return null;
+    }
+
+    @ApiOperation(value = "订单来源分析")
+    @GetMapping("/source-analysis")
+    public ResultMessage<List<OrderSourceAnalysisVO>> sourceAnalysis(StatisticsQueryParam statisticsQueryParam) {
+        try {
+            return ResultUtil.data(orderStatisticsService.getSourceAnalysis(statisticsQueryParam));
+        } catch (Exception e) {
+            log.error("订单来源分析错误", e);
+        }
+        return null;
     }
 }
