@@ -190,6 +190,54 @@ public class GlobalControllerExceptionHandler {
     }
 
     /**
+     * 加密异常处理
+     */
+    @ExceptionHandler(EncryptionException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    public ResultMessage<Object> encryptionExceptionHandler(HttpServletRequest request, final Exception e, HttpServletResponse response) {
+        log.error("加密异常:", e);
+        EncryptionException exception = (EncryptionException) e;
+        return ResultUtil.error(exception.getResultCode().code(), exception.getMsg());
+    }
+
+    /**
+     * 解密异常处理
+     */
+    @ExceptionHandler(DecryptionException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ResultMessage<Object> decryptionExceptionHandler(HttpServletRequest request, final Exception e, HttpServletResponse response) {
+        log.warn("解密异常: {}", e.getMessage());
+        DecryptionException exception = (DecryptionException) e;
+        return ResultUtil.error(exception.getResultCode().code(), exception.getMsg());
+    }
+
+    /**
+     * 重放攻击异常处理
+     */
+    @ExceptionHandler(ReplayAttackException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ResultMessage<Object> replayAttackExceptionHandler(HttpServletRequest request, final Exception e, HttpServletResponse response) {
+        log.warn("检测到重放攻击: {}", e.getMessage());
+        ReplayAttackException exception = (ReplayAttackException) e;
+        return ResultUtil.error(exception.getResultCode().code(), exception.getMsg());
+    }
+
+    /**
+     * 签名验证异常处理
+     */
+    @ExceptionHandler(SignatureVerificationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ResultMessage<Object> signatureVerificationExceptionHandler(HttpServletRequest request, final Exception e, HttpServletResponse response) {
+        log.warn("签名验证失败: {}", e.getMessage());
+        SignatureVerificationException exception = (SignatureVerificationException) e;
+        return ResultUtil.error(exception.getResultCode().code(), exception.getMsg());
+    }
+
+    /**
      * 拼接错误消息
      *
      * @param message       原始消息
