@@ -18,6 +18,7 @@ import cn.lili.modules.permission.entity.vo.AdminUserVO;
 import cn.lili.modules.permission.service.AdminUserService;
 import cn.lili.modules.verification.entity.enums.VerificationEnums;
 import cn.lili.modules.verification.service.VerificationService;
+import cn.lili.modules.security.aspect.annotation.SecurityLog;
 import cn.lili.mybatis.util.PageUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.swagger.annotations.Api;
@@ -59,6 +60,7 @@ public class AdminUserManagerController {
 
     @PostMapping(value = "/login")
     @ApiOperation(value = "登录管理员")
+    @SecurityLog(operationType = "ADMIN_LOGIN", securityLevel = "INFO", description = "管理员登录操作")
     public ResultMessage<Token> login(@NotNull(message = "用户名不能为空") @RequestParam String username,
                                       @NotNull(message = "密码不能为空") @RequestParam String password,
                                       @RequestHeader String uuid) {
@@ -70,6 +72,7 @@ public class AdminUserManagerController {
     }
 
     @ApiOperation(value = "注销接口")
+    @SecurityLog(operationType = "ADMIN_LOGOUT", securityLevel = "INFO", description = "管理员注销操作")
     @PostMapping("/logout")
     public ResultMessage<Object> logout() {
         this.memberService.logout(UserEnums.MANAGER);
@@ -133,6 +136,7 @@ public class AdminUserManagerController {
      */
     @PutMapping(value = "/editPassword")
     @ApiOperation(value = "修改密码")
+    @SecurityLog(operationType = "ADMIN_MODIFY_PASSWORD", securityLevel = "HIGH", description = "管理员修改密码操作")
     @DemoSite
     public ResultMessage<Object> editPassword(String password, String newPassword) {
         adminUserService.editPassword(password, newPassword);
@@ -141,6 +145,7 @@ public class AdminUserManagerController {
 
     @PostMapping(value = "/resetPassword/{ids}")
     @ApiOperation(value = "重置密码")
+    @SecurityLog(operationType = "ADMIN_RESET_PASSWORD", securityLevel = "HIGH", description = "管理员重置密码操作")
     @DemoSite
     public ResultMessage<Object> resetPassword(@PathVariable List ids) {
         adminUserService.resetPassword(ids);
@@ -160,6 +165,7 @@ public class AdminUserManagerController {
 
     @PostMapping
     @ApiOperation(value = "添加用户")
+    @SecurityLog(operationType = "ADMIN_ADD_USER", securityLevel = "HIGH", description = "管理员添加用户操作")
     public ResultMessage<Object> register(@Valid AdminUserDTO adminUser,
                                           @RequestParam(required = false) List<String> roles) {
         int rolesMaxSize = 10;
@@ -198,6 +204,7 @@ public class AdminUserManagerController {
 
     @DeleteMapping(value = "/{ids}")
     @ApiOperation(value = "批量通过ids删除")
+    @SecurityLog(operationType = "ADMIN_DELETE_USER", securityLevel = "HIGH", description = "管理员删除用户操作")
     @DemoSite
     public ResultMessage<Object> delAllByIds(@PathVariable List<String> ids) {
         adminUserService.deleteCompletely(ids);

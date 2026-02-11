@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
  * 运营后台 API
@@ -18,6 +19,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @SpringBootApplication
 @EnableCaching
 @EnableAsync
+@EnableAspectJAutoProxy(proxyTargetClass=true)
 public class ManagerApiApplication {
 
     @Primary
