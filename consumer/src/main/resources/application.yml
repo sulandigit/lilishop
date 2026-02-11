@@ -87,11 +87,18 @@ spring:
         #配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
         filters: stat,wall,log4j2
         #通过connectProperties属性来打开mergeSql功能；慢SQL记录
-        connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+        connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=3000;druid.stat.logSlowSql=true
         #合并多个DruidDataSource的监控数据
         useGlobalDataSourceStat: true
         loginUsername: druid
         loginPassword: druid
+
+# Druid慢SQL监控配置
+druid:
+  # 慢SQL阈值（毫秒），执行时间超过此值将被记录为慢SQL
+  slow-sql-millis: 3000
+  # 是否启用慢SQL日志记录
+  slow-sql-log-enabled: true
     #    sharding:
     #      default-data-source-name: default-datasource
     #      #需要拆分的表，可以设置多个  在 li_order 级别即可
