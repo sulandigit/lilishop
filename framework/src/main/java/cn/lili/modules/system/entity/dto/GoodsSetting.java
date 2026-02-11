@@ -36,4 +36,25 @@ public class GoodsSetting implements Serializable {
     @ApiModelProperty(value = "原图高")
     private Integer originalPictureHeight;
 
+    /**
+     * 图片优化相关配置字段
+     */
+    @ApiModelProperty(value = "默认图片质量(1-100), 推荐80")
+    private Integer defaultImageQuality;
+
+    @ApiModelProperty(value = "列表页使用的图片精度(THUMBNAIL/SMALL/ORIGINAL), 默认THUMBNAIL")
+    private String listPageImagePrecision;
+
+    @ApiModelProperty(value = "是否启用图片压缩")
+    private Boolean enableImageCompression;
+
+    @ApiModelProperty(value = "是否启用WebP格式转换")
+    private Boolean enableWebpConversion;
+
+    @ApiModelProperty(value = "列表页首屏返回的图片数, 默认6")
+    private Integer listPageImageCount;
+
+    @ApiModelProperty(value = "懒加载阈值 (第几张开始懒加载), 默认3")
+    private Integer lazyLoadThreshold;
+
 }
