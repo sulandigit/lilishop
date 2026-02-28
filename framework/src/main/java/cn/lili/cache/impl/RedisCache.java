@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * redis 缓存实现
+ * Redis cache implementation
  *
  * @author Chopepr
  */
@@ -31,10 +31,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 根据key获取缓存中的值
+     * Get the cached value by key
      *
-     * @param key 缓存key
-     * @return 缓存中对应的值，不存在则返回null
+     * @param key cache key
+     * @return the cached value, or null if not found
      */
     @Override
     public Object get(Object key) {
@@ -43,10 +43,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 根据key获取缓存中的字符串值
+     * Get the cached value as a string by key
      *
-     * @param key 缓存key
-     * @return 缓存值的字符串形式，不存在或异常时返回null
+     * @param key cache key
+     * @return the cached value as a string, or null if not found or on exception
      */
     @Override
     public String getString(Object key) {
@@ -58,10 +58,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 批量获取缓存值
+     * Get multiple cached values in batch
      *
-     * @param keys 缓存key集合
-     * @return 对应key的值列表，不存在的key对应位置为null
+     * @param keys collection of cache keys
+     * @return list of values corresponding to the keys, null for missing keys
      */
     @Override
     public List multiGet(Collection keys) {
@@ -70,9 +70,9 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 批量设置缓存键值对
+     * Set multiple key-value pairs in batch
      *
-     * @param map 键值对集合
+     * @param map key-value pairs to set
      */
     @Override
     public void multiSet(Map map) {
@@ -80,9 +80,9 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 批量删除缓存
+     * Delete multiple cache entries in batch
      *
-     * @param keys 需要删除的key集合
+     * @param keys collection of keys to delete
      */
     @Override
     public void multiDel(Collection keys) {
@@ -90,10 +90,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 设置缓存，无过期时间
+     * Set a cache entry with no expiration
      *
-     * @param key   缓存key
-     * @param value 缓存值
+     * @param key   cache key
+     * @param value cache value
      */
     @Override
     public void put(Object key, Object value) {
@@ -101,11 +101,11 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 设置缓存，指定过期时间（单位：秒）
+     * Set a cache entry with an expiration time in seconds
      *
-     * @param key   缓存key
-     * @param value 缓存值
-     * @param exp   过期时间，单位为秒
+     * @param key   cache key
+     * @param value cache value
+     * @param exp   expiration time in seconds
      */
     @Override
     public void put(Object key, Object value, Long exp) {
@@ -113,12 +113,12 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 设置缓存，指定过期时间和时间单位
+     * Set a cache entry with an expiration time in the specified time unit
      *
-     * @param key      缓存key
-     * @param value    缓存值
-     * @param exp      过期时间
-     * @param timeUnit 时间单位
+     * @param key      cache key
+     * @param value    cache value
+     * @param exp      expiration time
+     * @param timeUnit time unit for expiration
      */
     @Override
     public void put(Object key, Object value, Long exp, TimeUnit timeUnit) {
@@ -126,10 +126,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 删除指定key的缓存
+     * Delete a cache entry by key
      *
-     * @param key 缓存key
-     * @return 删除是否成功
+     * @param key cache key
+     * @return true if the key was successfully deleted
      */
     @Override
     public Boolean remove(Object key) {
@@ -138,9 +138,9 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 删除
+     * Delete cache entries matching a key prefix (fuzzy delete)
      *
-     * @param key 模糊删除key
+     * @param key key prefix for fuzzy deletion
      */
     @Override
     public void vagueDel(Object key) {
@@ -149,7 +149,7 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 清空所有缓存
+     * Clear all cache entries
      */
     @Override
     public void clear() {
@@ -158,11 +158,11 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 向Hash结构中存入单个键值对
+     * Put a single field-value pair into a Hash structure
      *
-     * @param key       缓存key
-     * @param hashKey   Hash中的字段名
-     * @param hashValue Hash中的字段值
+     * @param key       cache key
+     * @param hashKey   field name in the Hash
+     * @param hashValue field value in the Hash
      */
     @Override
     public void putHash(Object key, Object hashKey, Object hashValue) {
@@ -170,10 +170,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 向Hash结构中批量存入键值对
+     * Put multiple field-value pairs into a Hash structure
      *
-     * @param key 缓存key
-     * @param map 需要存入的键值对集合
+     * @param key cache key
+     * @param map field-value pairs to store
      */
     @Override
     public void putAllHash(Object key, Map map) {
@@ -181,11 +181,11 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 从Hash结构中获取指定字段的值
+     * Get the value of a specific field from a Hash structure
      *
-     * @param key     缓存key
-     * @param hashKey Hash中的字段名
-     * @return Hash中对应字段的值
+     * @param key     cache key
+     * @param hashKey field name in the Hash
+     * @return the value of the specified field
      */
     @Override
     public Object getHash(Object key, Object hashKey) {
@@ -193,10 +193,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 获取Hash结构中所有的键值对
+     * Get all field-value pairs from a Hash structure
      *
-     * @param key 缓存key
-     * @return Hash中所有的键值对
+     * @param key cache key
+     * @return all field-value pairs in the Hash
      */
     @Override
     public Map<Object, Object> getHash(Object key) {
@@ -204,10 +204,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 判断指定key是否存在
+     * Check whether a key exists in the cache
      *
-     * @param key 缓存key
-     * @return 存在返回true，否则返回false
+     * @param key cache key
+     * @return true if the key exists, false otherwise
      */
     @Override
     public boolean hasKey(Object key) {
@@ -215,16 +215,16 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 获取符合条件的key
+     * Get keys matching the given pattern using SCAN (non-blocking)
      *
-     * @param pattern 表达式
-     * @return 模糊匹配key
+     * @param pattern match pattern
+     * @return list of keys matching the pattern
      */
     @Override
     public List<Object> keys(String pattern) {
         List<Object> keys = new ArrayList<>();
         this.scan(pattern, item -> {
-            //符合条件的key
+            // key matching the pattern
             String key = new String(item, StandardCharsets.UTF_8);
             keys.add(key);
         });
@@ -232,11 +232,11 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 使用KEYS命令（阻塞式）获取符合条件的key列表
-     * 注意：在数据量大的场景下可能导致Redis阻塞，建议使用 {@link #keys(String)} 替代
+     * Get keys matching the given pattern using the KEYS command (blocking).
+     * Note: May cause Redis to block with large datasets. Prefer {@link #keys(String)} instead.
      *
-     * @param pattern 匹配模式
-     * @return 符合模式的key列表
+     * @param pattern match pattern
+     * @return list of keys matching the pattern
      */
     @Override
     public List<Object> keysBlock(String pattern) {
@@ -247,10 +247,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * scan 实现
+     * SCAN implementation for iterating over keys matching a pattern
      *
-     * @param pattern  表达式
-     * @param consumer 对迭代到的key进行操作
+     * @param pattern  match pattern
+     * @param consumer callback to process each matched key
      */
     private void scan(String pattern, Consumer<byte[]> consumer) {
         this.redisTemplate.execute((RedisConnection connection) -> {
@@ -262,7 +262,7 @@ public class RedisCache implements Cache {
                 return null;
 
             } catch (IOException e) {
-                log.error("scan错误", e);
+                log.error("scan error", e);
                 throw new RuntimeException(e);
             }
         });
@@ -270,41 +270,39 @@ public class RedisCache implements Cache {
 
 
     /**
-     * 使用HyperLogLog进行累加计数
-     * 利用PFADD命令将值添加到HyperLogLog结构中，用于基数统计（去重计数）
+     * Add a value to a HyperLogLog for cardinality estimation (uses PFADD command)
      *
-     * @param key   缓存key
-     * @param value 需要累加的值
-     * @return 添加成功返回1，元素已存在返回0
+     * @param key   cache key
+     * @param value value to add
+     * @return 1 if at least one internal register was altered, 0 otherwise
      */
     @Override
     public Long cumulative(Object key, Object value) {
         HyperLogLogOperations<Object, Object> operations = redisTemplate.opsForHyperLogLog();
-        //add 方法对应 PFADD 命令
+        // PFADD command
         return operations.add(key, value);
 
     }
 
     /**
-     * 获取HyperLogLog的基数估算值
-     * 利用PFCOUNT命令返回去重后的近似计数
+     * Get the estimated cardinality of a HyperLogLog (uses PFCOUNT command)
      *
-     * @param key 缓存key
-     * @return 基数估算值
+     * @param key cache key
+     * @return estimated cardinality
      */
     @Override
     public Long counter(Object key) {
         HyperLogLogOperations<Object, Object> operations = redisTemplate.opsForHyperLogLog();
 
-        //add 方法对应 PFCOUNT  命令
+        // PFCOUNT command
         return operations.size(key);
     }
 
     /**
-     * 批量获取HyperLogLog的基数估算值
+     * Get estimated cardinalities for multiple HyperLogLog keys in batch
      *
-     * @param keys 缓存key集合
-     * @return 各key对应的基数估算值列表，keys为null时返回空列表
+     * @param keys collection of cache keys
+     * @return list of estimated cardinalities, empty list if keys is null
      */
     @Override
     public List multiCounter(Collection keys) {
@@ -319,32 +317,31 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 合并多个HyperLogLog并累加计数
-     * 利用PFMERGE命令将多个HyperLogLog合并到第一个key中
+     * Merge multiple HyperLogLogs into the first key (uses PFMERGE command)
      *
-     * @param key 第一个参数为目标key，后续为需要合并的源key
-     * @return 合并后的基数估算值
+     * @param key first argument is the destination key, followed by source keys to merge
+     * @return estimated cardinality after merging
      */
     @Override
     public Long mergeCounter(Object... key) {
         HyperLogLogOperations<Object, Object> operations = redisTemplate.opsForHyperLogLog();
-        //计数器合并累加
+        // merge and accumulate counters
         return operations.union(key[0], key);
     }
 
     /**
-     * 原子自增操作，并设置过期时间（仅在首次创建时设置）
-     * 常用于限流、计数器等场景
+     * Atomic increment with expiration time (set only on first creation).
+     * Commonly used for rate limiting and counter scenarios.
      *
-     * @param key      缓存key
-     * @param liveTime 过期时间，单位为秒，仅在计数器首次创建时生效
-     * @return 自增前的值
+     * @param key      cache key
+     * @param liveTime expiration time in seconds, only applied when the counter is first created
+     * @return the value before increment
      */
     @Override
     public Long incr(String key, long liveTime) {
         RedisAtomicLong entityIdCounter = new RedisAtomicLong(key, redisTemplate.getConnectionFactory());
         Long increment = entityIdCounter.getAndIncrement();
-        //初始设置过期时间
+        // set expiration on initial creation
         if (increment == 0 && liveTime > 0) {
             entityIdCounter.expire(liveTime, TimeUnit.SECONDS);
         }
@@ -353,10 +350,10 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 原子自增操作，无过期时间
+     * Atomic increment without expiration
      *
-     * @param key 缓存key
-     * @return 自增前的值
+     * @param key cache key
+     * @return the value before increment
      */
     @Override
     public Long incr(String key) {
@@ -365,24 +362,26 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 使用Sorted Set记录keyword
-     * zincrby命令，对于一个Sorted Set，存在的就把分数加x(x可自行设定)，不存在就创建一个分数为1的成员
+     * Increment the score of a keyword in a Sorted Set by 1 (ZINCRBY command).
+     * If the Sorted Set does not exist, it will be created automatically.
+     * If the member does not exist, it will be added with a score of 1.
      *
-     * @param sortedSetName sortedSetName的Sorted Set不用预先创建，不存在会自动创建，存在则向里添加数据
-     * @param keyword       关键词
+     * @param sortedSetName name of the Sorted Set (created automatically if not present)
+     * @param keyword       the keyword member
      */
     @Override
     public void incrementScore(String sortedSetName, String keyword) {
-        //指向key名为KEY的zset元素
+        // increment the score of the zset member
         redisTemplate.opsForZSet().incrementScore(sortedSetName, keyword, 1);
     }
 
     /**
-     * 对Sorted Set中指定关键词的分数加1（默认步长）
+     * Increment the score of a keyword in a Sorted Set by a specified value (ZINCRBY command).
+     * If the member does not exist, it will be created with the given score.
      *
-     * @param sortedSetName sortedSetName
-     * @param keyword       关键词，不存在则自动创建，分数初始为1
-     * @param score         增加的分数值
+     * @param sortedSetName name of the Sorted Set
+     * @param keyword       the keyword member
+     * @param score         the score increment value
      */
     @Override
     public void incrementScore(String sortedSetName, String keyword, Integer score) {
@@ -390,14 +389,13 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * zrevrange命令, 查询Sorted Set中指定范围的值
-     * 返回的有序集合中，score大的在前面
-     * zrevrange方法无需担心用于指定范围的start和end出现越界报错问题
+     * Query a range of values from a Sorted Set in descending order by score (ZREVRANGE command).
+     * No out-of-bounds error will occur if start/end exceed the set size.
      *
-     * @param sortedSetName sortedSetName
-     * @param start         查询范围开始位置
-     * @param end           查询范围结束位置
-     * @return 符合排序的集合
+     * @param sortedSetName name of the Sorted Set
+     * @param start         start index of the range
+     * @param end           end index of the range
+     * @return set of typed tuples sorted by score in descending order
      */
     @Override
     public Set<ZSetOperations.TypedTuple<Object>> reverseRangeWithScores(String sortedSetName, Integer start, Integer end) {
@@ -405,13 +403,12 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * zrevrange命令, 查询Sorted Set中指定范围的值
-     * 返回的有序集合中，score大的在前面
-     * zrevrange方法无需担心用于指定范围的start和end出现越界报错问题
+     * Query top N values from a Sorted Set in descending order by score (ZREVRANGE command).
+     * No out-of-bounds error will occur if count exceeds the set size.
      *
-     * @param sortedSetName sortedSetName
-     * @param count         获取数量
-     * @return 符合排序的集合
+     * @param sortedSetName name of the Sorted Set
+     * @param count         number of entries to retrieve
+     * @return set of typed tuples sorted by score in descending order
      */
     @Override
     public Set<ZSetOperations.TypedTuple<Object>> reverseRangeWithScores(String sortedSetName, Integer count) {
@@ -420,12 +417,12 @@ public class RedisCache implements Cache {
 
 
     /**
-     * 向Zset里添加成员
+     * Add a member to a Sorted Set with a given score
      *
-     * @param key   key值
-     * @param score 分数，通常用于排序
-     * @param value 值
-     * @return 增加状态
+     * @param key   cache key
+     * @param score score value, typically used for sorting
+     * @param value member value
+     * @return true if the member was added successfully
      */
     @Override
     public boolean zAdd(String key, long score, String value) {
@@ -435,12 +432,12 @@ public class RedisCache implements Cache {
 
 
     /**
-     * 获取 某key 下 某一分值区间的队列
+     * Get members within a score range from a Sorted Set
      *
-     * @param key  缓存key
-     * @param from 开始时间
-     * @param to   结束时间
-     * @return 数据
+     * @param key  cache key
+     * @param from minimum score (inclusive)
+     * @param to   maximum score (inclusive)
+     * @return set of typed tuples within the score range
      */
     @Override
     public Set<ZSetOperations.TypedTuple<Object>> zRangeByScore(String key, int from, long to) {
@@ -449,11 +446,11 @@ public class RedisCache implements Cache {
     }
 
     /**
-     * 移除 Zset队列值
+     * Remove members from a Sorted Set
      *
-     * @param key   key值
-     * @param value 删除的集合
-     * @return 删除数量
+     * @param key   cache key
+     * @param value members to remove
+     * @return the number of members removed
      */
     @Override
     public Long zRemove(String key, String... value) {
