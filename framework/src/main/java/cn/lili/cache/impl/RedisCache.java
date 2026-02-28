@@ -30,12 +30,24 @@ public class RedisCache implements Cache {
 
     }
 
+    /**
+     * 根据key获取缓存中的值
+     *
+     * @param key 缓存key
+     * @return 缓存中对应的值，不存在则返回null
+     */
     @Override
     public Object get(Object key) {
 
         return redisTemplate.opsForValue().get(key);
     }
 
+    /**
+     * 根据key获取缓存中的字符串值
+     *
+     * @param key 缓存key
+     * @return 缓存值的字符串形式，不存在或异常时返回null
+     */
     @Override
     public String getString(Object key) {
         try {
@@ -45,38 +57,80 @@ public class RedisCache implements Cache {
         }
     }
 
+    /**
+     * 批量获取缓存值
+     *
+     * @param keys 缓存key集合
+     * @return 对应key的值列表，不存在的key对应位置为null
+     */
     @Override
     public List multiGet(Collection keys) {
         return redisTemplate.opsForValue().multiGet(keys);
 
     }
 
-
+    /**
+     * 批量设置缓存键值对
+     *
+     * @param map 键值对集合
+     */
     @Override
     public void multiSet(Map map) {
         redisTemplate.opsForValue().multiSet(map);
     }
 
+    /**
+     * 批量删除缓存
+     *
+     * @param keys 需要删除的key集合
+     */
     @Override
     public void multiDel(Collection keys) {
         redisTemplate.delete(keys);
     }
 
+    /**
+     * 设置缓存，无过期时间
+     *
+     * @param key   缓存key
+     * @param value 缓存值
+     */
     @Override
     public void put(Object key, Object value) {
         redisTemplate.opsForValue().set(key, value);
     }
 
+    /**
+     * 设置缓存，指定过期时间（单位：秒）
+     *
+     * @param key   缓存key
+     * @param value 缓存值
+     * @param exp   过期时间，单位为秒
+     */
     @Override
     public void put(Object key, Object value, Long exp) {
         put(key, value, exp, TimeUnit.SECONDS);
     }
 
+    /**
+     * 设置缓存，指定过期时间和时间单位
+     *
+     * @param key      缓存key
+     * @param value    缓存值
+     * @param exp      过期时间
+     * @param timeUnit 时间单位
+     */
     @Override
     public void put(Object key, Object value, Long exp, TimeUnit timeUnit) {
         redisTemplate.opsForValue().set(key, value, exp, timeUnit);
     }
 
+    /**
+     * 删除指定key的缓存
+     *
+     * @param key 缓存key
+     * @return 删除是否成功
+     */
     @Override
     public Boolean remove(Object key) {
 
@@ -94,32 +148,67 @@ public class RedisCache implements Cache {
         redisTemplate.delete(keys);
     }
 
+    /**
+     * 清空所有缓存
+     */
     @Override
     public void clear() {
         List keys = this.keys("*");
         redisTemplate.delete(keys);
     }
 
+    /**
+     * 向Hash结构中存入单个键值对
+     *
+     * @param key       缓存key
+     * @param hashKey   Hash中的字段名
+     * @param hashValue Hash中的字段值
+     */
     @Override
     public void putHash(Object key, Object hashKey, Object hashValue) {
         redisTemplate.opsForHash().put(key, hashKey, hashValue);
     }
 
+    /**
+     * 向Hash结构中批量存入键值对
+     *
+     * @param key 缓存key
+     * @param map 需要存入的键值对集合
+     */
     @Override
     public void putAllHash(Object key, Map map) {
         redisTemplate.opsForHash().putAll(key, map);
     }
 
+    /**
+     * 从Hash结构中获取指定字段的值
+     *
+     * @param key     缓存key
+     * @param hashKey Hash中的字段名
+     * @return Hash中对应字段的值
+     */
     @Override
     public Object getHash(Object key, Object hashKey) {
         return redisTemplate.opsForHash().get(key, hashKey);
     }
 
+    /**
+     * 获取Hash结构中所有的键值对
+     *
+     * @param key 缓存key
+     * @return Hash中所有的键值对
+     */
     @Override
     public Map<Object, Object> getHash(Object key) {
         return this.redisTemplate.opsForHash().entries(key);
     }
 
+    /**
+     * 判断指定key是否存在
+     *
+     * @param key 缓存key
+     * @return 存在返回true，否则返回false
+     */
     @Override
     public boolean hasKey(Object key) {
         return this.redisTemplate.opsForValue().get(key) != null;
@@ -142,6 +231,13 @@ public class RedisCache implements Cache {
         return keys;
     }
 
+    /**
+     * 使用KEYS命令（阻塞式）获取符合条件的key列表
+     * 注意：在数据量大的场景下可能导致Redis阻塞，建议使用 {@link #keys(String)} 替代
+     *
+     * @param pattern 匹配模式
+     * @return 符合模式的key列表
+     */
     @Override
     public List<Object> keysBlock(String pattern) {
         Set<Object> set = redisTemplate.keys(pattern);
@@ -173,6 +269,14 @@ public class RedisCache implements Cache {
     }
 
 
+    /**
+     * 使用HyperLogLog进行累加计数
+     * 利用PFADD命令将值添加到HyperLogLog结构中，用于基数统计（去重计数）
+     *
+     * @param key   缓存key
+     * @param value 需要累加的值
+     * @return 添加成功返回1，元素已存在返回0
+     */
     @Override
     public Long cumulative(Object key, Object value) {
         HyperLogLogOperations<Object, Object> operations = redisTemplate.opsForHyperLogLog();
@@ -181,6 +285,13 @@ public class RedisCache implements Cache {
 
     }
 
+    /**
+     * 获取HyperLogLog的基数估算值
+     * 利用PFCOUNT命令返回去重后的近似计数
+     *
+     * @param key 缓存key
+     * @return 基数估算值
+     */
     @Override
     public Long counter(Object key) {
         HyperLogLogOperations<Object, Object> operations = redisTemplate.opsForHyperLogLog();
@@ -189,6 +300,12 @@ public class RedisCache implements Cache {
         return operations.size(key);
     }
 
+    /**
+     * 批量获取HyperLogLog的基数估算值
+     *
+     * @param keys 缓存key集合
+     * @return 各key对应的基数估算值列表，keys为null时返回空列表
+     */
     @Override
     public List multiCounter(Collection keys) {
         if (keys == null) {
@@ -201,6 +318,13 @@ public class RedisCache implements Cache {
         return result;
     }
 
+    /**
+     * 合并多个HyperLogLog并累加计数
+     * 利用PFMERGE命令将多个HyperLogLog合并到第一个key中
+     *
+     * @param key 第一个参数为目标key，后续为需要合并的源key
+     * @return 合并后的基数估算值
+     */
     @Override
     public Long mergeCounter(Object... key) {
         HyperLogLogOperations<Object, Object> operations = redisTemplate.opsForHyperLogLog();
@@ -208,6 +332,14 @@ public class RedisCache implements Cache {
         return operations.union(key[0], key);
     }
 
+    /**
+     * 原子自增操作，并设置过期时间（仅在首次创建时设置）
+     * 常用于限流、计数器等场景
+     *
+     * @param key      缓存key
+     * @param liveTime 过期时间，单位为秒，仅在计数器首次创建时生效
+     * @return 自增前的值
+     */
     @Override
     public Long incr(String key, long liveTime) {
         RedisAtomicLong entityIdCounter = new RedisAtomicLong(key, redisTemplate.getConnectionFactory());
@@ -220,6 +352,12 @@ public class RedisCache implements Cache {
         return increment;
     }
 
+    /**
+     * 原子自增操作，无过期时间
+     *
+     * @param key 缓存key
+     * @return 自增前的值
+     */
     @Override
     public Long incr(String key) {
         RedisAtomicLong entityIdCounter = new RedisAtomicLong(key, redisTemplate.getConnectionFactory());
@@ -239,6 +377,13 @@ public class RedisCache implements Cache {
         redisTemplate.opsForZSet().incrementScore(sortedSetName, keyword, 1);
     }
 
+    /**
+     * 对Sorted Set中指定关键词的分数加1（默认步长）
+     *
+     * @param sortedSetName sortedSetName
+     * @param keyword       关键词，不存在则自动创建，分数初始为1
+     * @param score         增加的分数值
+     */
     @Override
     public void incrementScore(String sortedSetName, String keyword, Integer score) {
         redisTemplate.opsForZSet().incrementScore(sortedSetName, keyword, score);
