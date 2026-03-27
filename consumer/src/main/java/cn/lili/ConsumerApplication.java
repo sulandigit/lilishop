@@ -2,6 +2,7 @@ package cn.lili;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.hystrix.EnableHystrix;
 
 /**
  * 消费者
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @since 2020/11/16 10:03 下午
  */
 @SpringBootApplication
+@EnableHystrix
 public class ConsumerApplication {
 
     public static void main(String[] args) {

@@ -307,6 +307,70 @@ rocketmq:
     group: lili_group
     send-message-timeout: 30000
 
+# Hystrix熔断配置
+hystrix:
+  enabled: true
+  command:
+    default:
+      execution:
+        timeout:
+          enabled: true
+        isolation:
+          thread:
+            timeoutInMilliseconds: 10000
+            interruptOnTimeout: true
+      circuitBreaker:
+        enabled: true
+        errorThresholdPercentage: 50
+        requestVolumeThreshold: 20
+        sleepWindowInMilliseconds: 5000
+      metrics:
+        rollingStats:
+          timeInMilliseconds: 10000
+        healthSnapshot:
+          intervalInMilliseconds: 500
+    # 微信支付特殊配置
+    WechatCommand:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 15000
+      circuitBreaker:
+        errorThresholdPercentage: 40
+    # 支付宝支付特殊配置
+    AlipayCommand:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 12000
+      circuitBreaker:
+        errorThresholdPercentage: 40
+    # 物流查询特殊配置
+    LogisticsCommand:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 8000
+      circuitBreaker:
+        errorThresholdPercentage: 60
+    # 地理数据特殊配置
+    GeoCommand:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000
+      circuitBreaker:
+        errorThresholdPercentage: 70
+  threadpool:
+    default:
+      coreSize: 20
+      maximumSize: 50
+      maxQueueSize: 100
+      keepAliveTimeMinutes: 2
+      allowMaximumSizeToDivergeFromCoreSize: true
+  dashboard:
+    enabled: true
+
 xxl:
   job:
     admin:

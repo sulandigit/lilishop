@@ -1,6 +1,6 @@
 package cn.lili.common.utils;
 
-import lombok.extern.slf4j.Slf4j;
+import cn.lili.hystrix.HystrixCommandHttpExecutor;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
@@ -22,6 +22,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
@@ -37,8 +39,9 @@ import java.util.Map;
  * @author Bulbasaur
  * @since 2021/7/9 1:40 上午
  */
-@Slf4j
 public class HttpClientUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(HttpClientUtils.class);
 
     /**
      * org.apache.http.impl.client.CloseableHttpClient
@@ -188,5 +191,59 @@ public class HttpClientUtils {
             }
         }
         return resultString;
+    }
+
+    /**
+     * 使用Hystrix保护的GET请求
+     * 根据URL自动识别服务类型并应用相应的Hystrix配置
+     *
+     * @param url   请求URL
+     * @param param 请求参数
+     * @return 响应字符串
+     */
+    public static String doGetWithHystrix(String url, Map<String, String> param) {
+        // 通过Spring上下文获取HystrixCommandFactory
+        // 这里需要通过Spring工具类获取实例
+        try {
+            HystrixCommandHttpExecutor executor = SpringContextUtil.getBean(HystrixCommandHttpExecutor.class);
+            if (executor != null) {
+                // 根据URL确定服务类型
+                String serviceType = determineServiceType(url);
+                
+                // 创建请求头（如果有参数）
+                Map<String, String> headers = param != null ? param.entrySet().stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                        java.util.Map.Entry::getKey, 
+                        java.util.Map.Entry::getValue
+                    )) : new java.util.HashMap<>();
+                
+                return executor.executeGetRequest(url, headers, serviceType);
+            }
+        } catch (Exception e) {
+            log.warn("Hystrix执行GET请求失败，回退到普通请求: {}", e.getMessage());
+        }
+        
+        // 如果Hystrix不可用，回退到普通请求
+        return doGet(url, param);
+    }
+
+    /**
+     * 根据URL确定服务类型
+     *
+     * @param url 请求URL
+     * @return 服务类型
+     */
+    private static String determineServiceType(String url) {
+        if (url.contains("weixin") || url.contains("wechat") || url.contains("wxpay")) {
+            return "wechat";
+        } else if (url.contains("alipay") || url.contains("alipayapi")) {
+            return "alipay";
+        } else if (url.contains("kuaidi") || url.contains("logistics") || url.contains("express")) {
+            return "logistics";
+        } else if (url.contains("amap") || url.contains("gaode") || url.contains("lbs")) {
+            return "geo";
+        } else {
+            return "http";
+        }
     }
 }

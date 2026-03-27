@@ -3,6 +3,7 @@ package cn.lili;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cloud.netflix.hystrix.EnableHystrix;
 
 /**
  * 基础API
@@ -12,6 +13,7 @@ import org.springframework.cache.annotation.EnableCaching;
  */
 @EnableCaching
 @SpringBootApplication
+@EnableHystrix
 public class CommonApiApplication {
 
     public static void main(String[] args) {
