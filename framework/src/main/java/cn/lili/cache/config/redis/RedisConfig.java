@@ -14,6 +14,7 @@ import org.redisson.config.SingleServerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.Cache;
@@ -62,13 +63,14 @@ public class RedisConfig extends CachingConfigurerSupport {
 
     /**
      * 当有多个管理器的时候，必须使用该注解在一个管理器上注释：表示该管理器为默认的管理器
+     * 当二级缓存禁用时使用此纯Redis缓存管理器
      *
      * @param connectionFactory 链接工厂
      * @return 缓存
      */
     @Bean
-    @Primary
-    public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+    @ConditionalOnProperty(prefix = "lili.cache.two-level", name = "enabled", havingValue = "false")
+    public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
         //初始化一个RedisCacheWriter
         RedisCacheWriter redisCacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory);
         //序列化方式2
