@@ -3,8 +3,11 @@ package cn.lili.modules.goods.serviceimpl;
 import cn.hutool.json.JSONUtil;
 import cn.lili.modules.file.entity.enums.OssEnum;
 import cn.lili.modules.goods.entity.dos.GoodsGallery;
+import cn.lili.modules.goods.entity.enums.ImagePrecisionEnum;
+import cn.lili.modules.goods.entity.vos.GoodsImageVO;
 import cn.lili.modules.goods.mapper.GoodsGalleryMapper;
 import cn.lili.modules.goods.service.GoodsGalleryService;
+import cn.lili.modules.goods.service.ImageProcessService;
 import cn.lili.modules.system.entity.dos.Setting;
 import cn.lili.modules.system.entity.dto.GoodsSetting;
 import cn.lili.modules.system.entity.dto.OssSetting;
@@ -17,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * 商品相册接口实现
@@ -33,6 +38,12 @@ public class GoodsGalleryServiceImpl extends ServiceImpl<GoodsGalleryMapper, Goo
      */
     @Autowired
     private SettingService settingService;
+
+    /**
+     * 图片处理服务
+     */
+    @Autowired
+    private ImageProcessService imageProcessService;
 
 
     @Override
@@ -113,6 +124,64 @@ public class GoodsGalleryServiceImpl extends ServiceImpl<GoodsGalleryMapper, Goo
                 return url + "?imageMogr2/thumbnail/" + width + "x" + height;
         }
         return url;
+    }
+
+    /**
+     * 增强版 getUrl - 支持质量和WebP参数
+     *
+     * @param url       图片URL
+     * @param width     宽度
+     * @param height    高度
+     * @param quality   质量 (1-100)
+     * @param enableWebp 是否启用WebP
+     * @return 处理后的URL
+     */
+    public String getUrl(String url, Integer width, Integer height, Integer quality, Boolean enableWebp) {
+        return imageProcessService.processImageUrl(url, width, height, quality, enableWebp);
+    }
+
+    /**
+     * 获取商品图片列表 - 返回优化后的图片对象
+     *
+     * @param goodsId           商品ID
+     * @param precision         图片精度
+     * @param includeLazyLoadInfo 是否包含懒加载信息
+     * @return 图片对象列表
+     */
+    public List<GoodsImageVO> getGoodsImageList(String goodsId, ImagePrecisionEnum precision, Boolean includeLazyLoadInfo) {
+        List<GoodsImageVO> result = new ArrayList<>();
+        try {
+            // 查询商品相册列表
+            List<GoodsGallery> galleries = this.goodsGalleryList(goodsId);
+            if (galleries.isEmpty()) {
+                return result;
+            }
+
+            // 获取商品设置
+            Setting setting = settingService.get(SettingEnum.GOODS_SETTING.name());
+            GoodsSetting goodsSetting = JSONUtil.toBean(setting.getSettingValue(), GoodsSetting.class);
+
+            // 获取默认配置
+            int listPageImageCount = goodsSetting.getListPageImageCount() != null ? goodsSetting.getListPageImageCount() : 6;
+            int defaultQuality = goodsSetting.getDefaultImageQuality() != null ? goodsSetting.getDefaultImageQuality() : 80;
+            boolean enableWebp = goodsSetting.getEnableWebpConversion() != null && goodsSetting.getEnableWebpConversion();
+
+            // 使用ImageProcessService构建图片对象列表
+            result = imageProcessService.buildImageObjectList(galleries, precision, listPageImageCount, defaultQuality, enableWebp);
+        } catch (Exception e) {
+            // 异常处理：返回原始URL列表
+            return galleries.stream()
+                    .map(g -> {
+                        GoodsImageVO vo = new GoodsImageVO();
+                        vo.setImageUrl(g.getOriginal());
+                        vo.setOriginalUrl(g.getOriginal());
+                        vo.setIsLazyLoad(false);
+                        vo.setLoadPriority(0);
+                        return vo;
+                    })
+                    .collect(Collectors.toList());
+        }
+        return result;
     }
 
 }
