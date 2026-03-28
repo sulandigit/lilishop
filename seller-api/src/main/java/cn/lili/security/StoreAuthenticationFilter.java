@@ -191,4 +191,3 @@ public class StoreAuthenticationFilter extends BasicAuthenticationFilter {
     }
 
 }
-
