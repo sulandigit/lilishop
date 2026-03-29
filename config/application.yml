@@ -266,6 +266,12 @@ lili:
     corePoolSize: 5
     maxPoolSize: 50
     queueCapacity: 50
+  #备份配置
+  backup:
+    path: /opt/lilishop/backup
+    auto:
+      enabled: false
+      type: FULL
   data:
     elasticsearch:
       cluster-name: elasticsearch
