@@ -11,6 +11,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
@@ -24,8 +25,11 @@ import java.util.List;
 @RequestMapping("/buyer/passport/connect/bind")
 public class ConnectBuyerBindController {
 
-    @Autowired
-    private ConnectService connectService;
+    private final ConnectService connectService;
+
+    public ConnectBuyerBindController(ConnectService connectService) {
+        this.connectService = connectService;
+    }
 
     @ApiOperation(value = "unionID 绑定")
     @ApiImplicitParams({
@@ -33,23 +37,24 @@ public class ConnectBuyerBindController {
             @ApiImplicitParam(name = "type", value = "type", required = true, paramType = "query")
     })
     @PostMapping
-    public void unionIDBind(@RequestParam String unionID, @RequestParam String type) {
+    public ResultMessage<Void> bindUnionId(@NotBlank(message = "unionID不能为空") @RequestParam String unionID,
+                                            @NotBlank(message = "type不能为空") @RequestParam String type) {
         connectService.bind(unionID, type);
+        return ResultUtil.success();
     }
 
     @ApiOperation(value = "unionID 解绑")
     @ApiImplicitParam(name = "type", value = "type", required = true, paramType = "query")
     @PostMapping("/unbind")
-    public void unionIDBind(@RequestParam String type) {
+    public ResultMessage<Void> unbindUnionId(@NotBlank(message = "type不能为空") @RequestParam String type) {
         connectService.unbind(type);
+        return ResultUtil.success();
     }
-
 
     @GetMapping("/list")
     @ApiOperation(value = "绑定列表")
     public ResultMessage<List<String>> bindList() {
         return ResultUtil.data(connectService.bindList());
     }
-
 
 }
