@@ -83,4 +83,11 @@ public interface DistributionGoodsService extends IService<DistributionGoods> {
      */
     DistributionGoods checked(String skuId, Double commission, String storeId);
 
+    /**
+     * 取消分销商品
+     *
+     * @param id 分销商品ID
+     */
+    void cancelDistributionGoods(String id);
+
 }
