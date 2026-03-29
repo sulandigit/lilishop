@@ -257,6 +257,21 @@ lili:
     # token过期时间（分钟）
     tokenExpireTime: 30
 
+  # API接口加密配置
+  api-encryption:
+    # 是否启用加密(开发环境可设为false便于调试)
+    enabled: true
+    # AES密钥(32字节Base64编码,使用Jasypt加密保护)
+    # 生产环境请使用: java -jar jasypt-*.jar encrypt password=lili algorithm=PBEWITHHMACSHA512ANDAES_256 input=你的密钥
+    # 示例密钥(请在生产环境替换): Bzndql0RVufbPBRy+Zl82V5USzvnFt6yFcl5O57CIpE=
+    aes-key: Bzndql0RVufbPBRy+Zl82V5USzvnFt6yFcl5O57CIpE=
+    # 签名密钥(可选,用于验证请求签名)
+    sign-secret: lili-shop-sign-secret-key-2026
+    # 时间戳容差(分钟,防重放攻击)
+    timestamp-tolerance: 5
+    # nonce有效期(秒,防重放攻击)
+    nonce-expire: 300
+
   # 使用Spring @Cacheable注解失效时间
   cache:
     # 过期时间 单位秒 永久不过期设为-1

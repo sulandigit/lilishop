@@ -1,5 +1,6 @@
 package cn.lili.controller.wallet;
 
+import cn.lili.common.aop.annotation.ApiEncrypt;
 import cn.lili.common.aop.annotation.PreventDuplicateSubmissions;
 import cn.lili.common.enums.ResultCode;
 import cn.lili.common.enums.ResultUtil;
@@ -87,6 +88,7 @@ public class MemberWalletBuyerController {
         return ResultUtil.data(withdrawalSettingVO);
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @PreventDuplicateSubmissions
     @PostMapping(value = "/withdrawal")
     @ApiOperation(value = "会员中心余额提现")
@@ -99,6 +101,7 @@ public class MemberWalletBuyerController {
         return ResultUtil.data(memberWalletService.applyWithdrawal(price, realName, connectNumber));
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @PostMapping(value = "/set-password")
     @ApiOperation(value = "设置支付密码")
     @ApiImplicitParams({
@@ -121,6 +124,7 @@ public class MemberWalletBuyerController {
 
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @PostMapping(value = "/update-password/ordinary")
     @ApiOperation(value = "普通方式进行支付密码的修改")
     @ApiImplicitParams({

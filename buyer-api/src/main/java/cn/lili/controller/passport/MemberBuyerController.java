@@ -1,5 +1,6 @@
 package cn.lili.controller.passport;
 
+import cn.lili.common.aop.annotation.ApiEncrypt;
 import cn.lili.common.enums.ResultCode;
 import cn.lili.common.enums.ResultUtil;
 import cn.lili.common.exception.ServiceException;
@@ -129,6 +130,7 @@ public class MemberBuyerController {
     }
 
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @ApiOperation(value = "登录接口")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "username", value = "用户名", required = true, paramType = "query"),
@@ -149,6 +151,7 @@ public class MemberBuyerController {
         return ResultUtil.success();
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @ApiOperation(value = "短信登录接口")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "mobile", value = "手机号", required = true, paramType = "query"),
@@ -191,6 +194,7 @@ public class MemberBuyerController {
         }
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @ApiOperation(value = "注册用户")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "username", value = "用户名", required = true, paramType = "query"),
@@ -239,6 +243,7 @@ public class MemberBuyerController {
         }
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @ApiOperation(value = "修改密码")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "是否保存登录", required = true, paramType = "query")
@@ -256,6 +261,7 @@ public class MemberBuyerController {
         return ResultUtil.data(memberService.editOwn(memberEditDTO));
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @ApiOperation(value = "修改密码")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "password", value = "旧密码", required = true, paramType = "query"),
@@ -276,6 +282,7 @@ public class MemberBuyerController {
         return ResultUtil.data(memberService.canInitPass());
     }
 
+    @ApiEncrypt(encryptRequest = true, encryptResponse = true, enableReplayProtection = true)
     @ApiOperation(value = "初始设置密码")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "newPassword", value = "新密码", required = true, paramType = "query")
