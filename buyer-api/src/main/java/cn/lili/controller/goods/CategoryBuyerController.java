@@ -18,6 +18,7 @@ import java.util.List;
 
 
 /**
+ * Buyer side category controller
  * 买家端,商品分类接口
  *
  * @author Chopper
@@ -28,16 +29,24 @@ import java.util.List;
 @RequestMapping("/buyer/goods/category")
 public class CategoryBuyerController {
     /**
+     * Category service
      * 商品分类
      */
     @Autowired
     private CategoryService categoryService;
 
+    /**
+     * Get category list by parent ID
+     * 获取商品分类列表
+     *
+     * @param parentId parent category ID, use 0 for root level categories
+     * @return list of category VOs
+     */
     @ApiOperation(value = "获取商品分类列表")
     @ApiImplicitParam(name = "parentId", value = "上级分类ID，全部分类为：0", required = true, dataType = "Long", paramType = "path")
     @GetMapping(value = "/get/{parentId}")
     public ResultMessage<List<CategoryVO>> list(@NotNull(message = "分类ID不能为空") @PathVariable String parentId) {
-
+        // Retrieve all child categories for the given parent ID
         return ResultUtil.data(categoryService.listAllChildren(parentId));
     }
 }
